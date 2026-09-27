@@ -1986,7 +1986,6 @@ BEGIN
         'core.company_profile'::regclass,
         'core.branch'::regclass,
         'core.department'::regclass,
-        'core.cost_center'::regclass,
         'core.designation'::regclass,
         'core.contractor'::regclass,
         'auth.user_account'::regclass,
@@ -2026,7 +2025,6 @@ BEGIN
     FOREACH target IN ARRAY ARRAY[
         'core.branch'::regclass,
         'core.department'::regclass,
-        'core.cost_center'::regclass,
         'core.designation'::regclass,
         'core.contractor'::regclass,
         'auth.role'::regclass,
@@ -2110,7 +2108,6 @@ SELECT
     e.employee_no,
     e.payroll_no,
     e.first_name,
-    e.middle_name,
     e.last_name,
     e.employment_status,
     a.branch_id,
@@ -2122,7 +2119,6 @@ SELECT
     a.designation_id,
     des.code AS designation_code,
     des.name AS designation_name,
-    a.cost_center_id,
     a.manager_employee_id,
     a.effective_from
 FROM hr.employee e
@@ -2172,7 +2168,6 @@ SELECT
     pr.id AS payroll_run_id,
     epr.branch_id,
     epr.department_id,
-    epr.cost_center_id,
     epr.employee_id,
     epr.gross_earnings,
     epr.total_deductions,

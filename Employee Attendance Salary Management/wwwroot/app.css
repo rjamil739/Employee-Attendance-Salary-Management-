@@ -1,3 +1,16 @@
+html, body {
+    margin: 0;
+    min-width: 320px;
+    color: #12223f;
+    background: #f5f8fc;
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
 h1:focus {
     outline: none;
 }
