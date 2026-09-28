@@ -1,0 +1,36 @@
+@page "/dashboard/hr"
+@attribute [Authorize(Roles = "HR_MANAGER")]
+@using System.Security.Claims
+@using Employee_Attendance_Salary_Management.Components.Dashboard
+@using Employee_Attendance_Salary_Management.Models
+@using Employee_Attendance_Salary_Management.Services
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject DashboardService DashboardService
+@inject CompanyProfileService CompanyService
+
+<PageTitle>HR Dashboard</PageTitle>
+
+@if (summary is null)
+{
+    <div class="dashboard-loading">Loading dashboard…</div>
+}
+else
+{
+    <DashboardView Summary="summary" DisplayName="@displayName" Company="company" IsAdmin="false" />
+}
+
+@code {
+    private DashboardSummary? summary;
+    private CompanyProfile? company;
+    private string displayName = "HR Manager";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var principal = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        var userId = Guid.Parse(principal.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var allAccess = bool.TryParse(principal.FindFirstValue("all_branch_access"), out var value) && value;
+        displayName = principal.FindFirstValue("display_name") ?? principal.Identity?.Name ?? "HR Manager";
+        company = await CompanyService.GetAsync();
+        summary = await DashboardService.GetAsync(userId, allAccess);
+    }
+}

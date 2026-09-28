@@ -1,0 +1,95 @@
+@page "/login/{Role}"
+@attribute [AllowAnonymous]
+@using Employee_Attendance_Salary_Management.Models
+@using Employee_Attendance_Salary_Management.Services
+@inject CompanyProfileService CompanyService
+
+<PageTitle>@RoleTitle Login | @(company?.CompanyName ?? "Employee Portal")</PageTitle>
+
+<main class="login-page @(IsHr ? "hr-theme" : "admin-theme")">
+    <a class="back-home" href="/"><span>←</span> Back to home</a>
+
+    <section class="login-shell">
+        <div class="login-brand-panel">
+            <div class="company-brand">
+                @if (company?.LogoDataUrl is not null)
+                {
+                    <img src="@company.LogoDataUrl" alt="@company.CompanyName logo" />
+                }
+                else
+                {
+                    <span><svg viewBox="0 0 24 24"><path d="M4 20V7l8-3v16M4 20h16M12 9h8v11" /></svg></span>
+                }
+                <strong>@(company?.CompanyName ?? "Employee Portal")</strong>
+            </div>
+            <div class="brand-message">
+                <span class="eyebrow">Secure portal</span>
+                <h1>Welcome<br />back.</h1>
+                <p>Sign in with your authorized account to continue.</p>
+            </div>
+            <small>Attendance & Payroll Management</small>
+        </div>
+
+        <div class="login-form-panel">
+            <div class="role-icon">
+                @if (IsHr)
+                {
+                    <svg viewBox="0 0 24 24"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM17 11l2 2 4-4" /></svg>
+                }
+                else
+                {
+                    <svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-4Z" /><path d="m9 12 2 2 4-4" /></svg>
+                }
+            </div>
+            <span class="role-label">@RoleTitle access</span>
+            <h2>Sign in to your account</h2>
+            <p class="form-subtitle">Enter your account details below.</p>
+
+            <form method="post" action="/auth/login">
+                <AntiforgeryToken />
+                <input type="hidden" name="portal" value="@(IsHr ? "hr" : "admin")" />
+
+                <div class="field-group">
+                    <label for="user-name">Username</label>
+                    <div class="input-wrap">
+                        <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" /></svg>
+                        <input id="user-name" name="userName" class="login-input" autocomplete="username" placeholder="Enter your username" required />
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrap">
+                        <svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5zM12 15v2" /></svg>
+                        <input id="password" name="password" type="password" class="login-input" autocomplete="current-password" placeholder="Enter your password" required />
+                    </div>
+                </div>
+
+                <label class="remember-row"><input type="checkbox" name="rememberMe" /> <span>Keep me signed in</span></label>
+
+                @if (Error == "invalid")
+                {
+                    <div class="login-message error">Username, password or selected portal is incorrect.</div>
+                }
+
+                <button class="login-submit" type="submit">Sign in <span>→</span></button>
+            </form>
+
+            <p class="security-note"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /></svg> Protected company access</p>
+        </div>
+    </section>
+</main>
+
+@code {
+    [Parameter] public string Role { get; set; } = "admin";
+    [SupplyParameterFromQuery] public string? Error { get; set; }
+
+    private CompanyProfile? company;
+    private bool IsHr => Role.Equals("hr", StringComparison.OrdinalIgnoreCase);
+    private string RoleTitle => IsHr ? "HR Manager" : "Administrator";
+
+    protected override async Task OnInitializedAsync()
+    {
+        company = await CompanyService.GetAsync();
+    }
+}

@@ -1,0 +1,66 @@
+svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.login-page {
+    min-height: 100vh;
+    padding: 42px 24px;
+    display: grid;
+    place-items: center;
+    position: relative;
+    color: #172943;
+    background: radial-gradient(circle at 85% 10%, rgba(62, 198, 185, .13), transparent 25rem), #f4f7fb;
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+.back-home { position: absolute; top: 27px; left: max(28px, calc((100% - 950px) / 2)); color: #63738a; text-decoration: none; font-size: 11px; font-weight: 700; }
+.back-home span { margin-right: 5px; }
+.back-home:hover { color: #2553b6; }
+.login-shell { width: min(950px, 100%); min-height: 570px; margin-top: 20px; display: grid; grid-template-columns: .9fr 1.1fr; overflow: hidden; border: 1px solid #dce5ef; border-radius: 26px; background: #fff; box-shadow: 0 28px 75px rgba(24, 50, 88, .13); }
+.login-brand-panel { padding: 45px; display: flex; flex-direction: column; color: white; background: linear-gradient(145deg, #113382, #245dbe 72%, #287ca4); }
+.hr-theme .login-brand-panel { background: linear-gradient(145deg, #125e5a, #208f7e 72%, #298e9c); }
+.company-brand { display: flex; align-items: center; gap: 11px; }
+.company-brand img, .company-brand > span { width: 42px; height: 42px; border-radius: 12px; }
+.company-brand img { object-fit: contain; padding: 5px; background: white; }
+.company-brand > span { display: grid; place-items: center; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.18); }
+.company-brand svg { width: 22px; }
+.company-brand strong { max-width: 270px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.brand-message { margin: auto 0; }
+.eyebrow { color: #aef0e5; font-size: 9px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; }
+.brand-message h1 { margin: 16px 0; font-size: 55px; line-height: 1; letter-spacing: -2.5px; }
+.brand-message p { max-width: 300px; color: #c7d7f3; font-size: 13px; line-height: 1.7; }
+.hr-theme .brand-message p { color: #c5ece5; }
+.login-brand-panel > small { color: rgba(255,255,255,.6); font-size: 9px; letter-spacing: .8px; text-transform: uppercase; }
+
+.login-form-panel { padding: 58px 65px 40px; }
+.role-icon { width: 49px; height: 49px; margin-bottom: 20px; display: grid; place-items: center; border-radius: 14px; color: #2858c0; background: #e8efff; }
+.role-icon svg { width: 25px; }
+.hr-theme .role-icon { color: #208977; background: #e2f7f2; }
+.role-label { color: #3158ad; font-size: 9px; font-weight: 900; letter-spacing: 1.2px; text-transform: uppercase; }
+.hr-theme .role-label { color: #238a78; }
+.login-form-panel h2 { margin: 7px 0 7px; color: #172e50; font-size: 25px; letter-spacing: -.7px; }
+.form-subtitle { margin: 0 0 29px; color: #8793a4; font-size: 11px; }
+.field-group { margin-bottom: 18px; }
+.field-group > label { margin-bottom: 7px; display: block; color: #3a4d67; font-size: 10px; font-weight: 800; }
+.input-wrap { position: relative; }
+.input-wrap > svg { position: absolute; z-index: 1; width: 17px; left: 14px; top: 14px; color: #8694a7; }
+.login-input { width: 100%; height: 46px; padding: 0 14px 0 42px; border: 1px solid #d8e0ea; border-radius: 10px; outline: 0; color: #213651; background: #fbfcfe; font-size: 11px; }
+.login-input:focus { border-color: #5277ce; background: white; box-shadow: 0 0 0 4px rgba(82, 119, 206, .09); }
+.remember-row { margin: -3px 0 16px; display: inline-flex; align-items: center; gap: 7px; color: #66758a; font-size: 9px; cursor: pointer; }
+.remember-row input { width: 14px; height: 14px; accent-color: #2754b5; }
+.hr-theme .remember-row input { accent-color: #218a77; }
+.login-message { margin-bottom: 15px; padding: 10px 12px; border: 1px solid #cbd9f2; border-radius: 9px; color: #31528f; background: #f0f5ff; font-size: 10px; }
+.login-message.error { border-color: #efc9c9; color: #a53a3a; background: #fff3f3; }
+.login-submit { width: 100%; height: 46px; margin-top: 5px; border: 0; border-radius: 11px; display: flex; align-items: center; justify-content: center; gap: 11px; color: white; background: #1f4ba9; box-shadow: 0 11px 23px rgba(31, 75, 169, .2); font-size: 11px; font-weight: 800; cursor: pointer; }
+.hr-theme .login-submit { background: #218a77; box-shadow: 0 11px 23px rgba(33, 138, 119, .2); }
+.login-submit span { transition: transform .2s ease; }
+.login-submit:hover span { transform: translateX(3px); }
+.security-note { margin: 18px 0 0; display: flex; align-items: center; justify-content: center; gap: 6px; color: #98a3b1; font-size: 9px; }
+.security-note svg { width: 12px; }
+
+@media (max-width: 720px) {
+    .login-page { padding: 65px 16px 24px; }
+    .back-home { top: 24px; left: 18px; }
+    .login-shell { grid-template-columns: 1fr; }
+    .login-brand-panel { min-height: 220px; padding: 30px; }
+    .brand-message { margin: 30px 0 20px; }
+    .brand-message h1 { font-size: 40px; }
+    .login-form-panel { padding: 38px 28px; }
+}

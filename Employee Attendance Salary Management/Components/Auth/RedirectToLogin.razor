@@ -1,0 +1,10 @@
+@inject NavigationManager Navigation
+
+<div>Redirecting to secure access…</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
+}

@@ -6,179 +6,134 @@
 @using Npgsql
 @inject CompanyProfileService CompanyService
 
-<PageTitle>@(company?.CompanyName ?? "HR Orbit") | Welcome</PageTitle>
+<PageTitle>@(company?.CompanyName ?? "Company setup")</PageTitle>
 
-<main class="home-shell">
-    <header class="topbar">
+<main class="welcome-page">
+    <header class="site-header">
         <a class="brand" href="/" aria-label="Home">
             @if (company?.LogoDataUrl is not null)
             {
-                <img class="brand-logo" src="@company.LogoDataUrl" alt="@company.CompanyName logo" />
+                <img src="@company.LogoDataUrl" alt="@company.CompanyName logo" />
             }
             else
             {
-                <span class="brand-mark" aria-hidden="true">
-                    <svg viewBox="0 0 32 32"><path d="M8 7.5h16a3 3 0 0 1 3 3v11a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-11a3 3 0 0 1 3-3Z"/><path d="M12 7.5v-2h8v2M5 14h22M13 18h6"/></svg>
+                <span class="brand-placeholder">
+                    <svg viewBox="0 0 24 24"><path d="M4 20V7l8-3v16M4 20h16M12 9h8v11M8 9v.01M8 13v.01M8 17v.01M16 13v.01M16 17v.01" /></svg>
                 </span>
             }
-            <span>
-                <strong>@(company?.CompanyName ?? "HR Orbit")</strong>
-                <small>People & Payroll</small>
+            <span class="brand-copy">
+                <strong>@(company?.CompanyName ?? "Company setup")</strong>
+                <small>Attendance & Payroll</small>
             </span>
         </a>
 
-        <nav class="role-tabs" aria-label="Quick access">
-            <button class="role-tab active" type="button" @onclick='() => SelectRole("admin")'>
-                <span class="tab-dot"></span> Admin
-            </button>
-            <button class="role-tab" type="button" @onclick='() => SelectRole("hr")'>
-                <span class="tab-dot"></span> HR Manager
-            </button>
-            <button class="role-tab company-tab" type="button" disabled="@(company is not null)" @onclick="OpenCompanyPanel">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V6l8-3v18M4 21h16M12 9h8v12M8 9v.01M8 13v.01M8 17v.01M16 13v.01M16 17v.01"/></svg>
-                Company setup
-                @if (company is not null)
-                {
-                    <span class="setup-done" title="Company profile completed">✓</span>
-                }
-            </button>
-        </nav>
+        @if (company is not null)
+        {
+            <span class="secure-label">
+                <svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5z" /></svg>
+                Secure employee portal
+            </span>
+        }
     </header>
 
     @if (isLoading)
     {
-        <section class="loading-state" aria-live="polite">
+        <section class="loading-state">
             <span class="loader"></span>
-            <p>Preparing your workspace…</p>
+            <p>Loading your workspace…</p>
         </section>
     }
-    else if (showCompanyPanel && company is null)
+    else if (company is null)
     {
-        <section class="company-setup-wrap">
-            <button class="back-button" type="button" @onclick="CloseCompanyPanel"><span>←</span> Back to welcome</button>
-            <div class="company-panel">
-                <div class="setup-copy">
-                    <span class="eyebrow"><span></span> One-time setup</span>
-                    <h1>Let’s add your company.</h1>
-                    <p>This identity will appear across your HR, attendance and payroll workspace.</p>
-                    <div class="setup-points">
-                        <div><span>01</span><p><strong>Company identity</strong><small>Add the official company name.</small></p></div>
-                        <div><span>02</span><p><strong>Brand logo</strong><small>Upload a clear PNG, JPG, WEBP or SVG.</small></p></div>
-                        <div><span>03</span><p><strong>Ready to work</strong><small>Your home screen updates instantly.</small></p></div>
-                    </div>
-                </div>
+        <section class="setup-section">
+            <div class="setup-intro">
+                <span class="kicker">One-time setup</span>
+                <h1>Set up your company</h1>
+                <p>Add your company name and logo. This information will appear on the welcome and login pages.</p>
+            </div>
 
-                <EditForm Model="companyForm" OnValidSubmit="SaveCompanyAsync" class="company-form" FormName="company-setup">
-                    <DataAnnotationsValidator />
-                    <div class="form-heading">
-                        <span class="form-icon"><svg viewBox="0 0 24 24"><path d="M4 21V6l8-3v18M4 21h16M12 9h8v12M8 9v.01M8 13v.01M8 17v.01M16 13v.01M16 17v.01"/></svg></span>
-                        <div><h2>Company profile</h2><p>Complete the details below</p></div>
-                    </div>
+            <EditForm Model="companyForm" OnValidSubmit="SaveCompanyAsync" class="company-form" FormName="company-setup">
+                <DataAnnotationsValidator />
 
-                    <label class="field-label" for="company-name">Company name</label>
+                <div class="field-group">
+                    <label for="company-name">Company name</label>
                     <div class="input-wrap">
-                        <svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V5h10v16M15 9h4v12M9 9v.01M9 13v.01M9 17v.01"/></svg>
-                        <InputText id="company-name" class="text-input" @bind-Value="companyForm.CompanyName" placeholder="e.g. Northstar Textiles" />
+                        <svg viewBox="0 0 24 24"><path d="M4 20V7l8-3v16M4 20h16M12 9h8v11" /></svg>
+                        <InputText id="company-name" class="text-input" @bind-Value="companyForm.CompanyName" placeholder="Enter official company name" />
                     </div>
                     <ValidationMessage For="() => companyForm.CompanyName" />
+                </div>
 
-                    <label class="field-label">Company logo <span>Optional</span></label>
-                    <label class="logo-drop @(logoPreview is not null ? "has-logo" : "")">
+                <div class="field-group">
+                    <label>Company logo <span>Optional</span></label>
+                    <label class="logo-picker">
                         <InputFile OnChange="HandleLogoAsync" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
                         @if (logoPreview is not null)
                         {
                             <img src="@logoPreview" alt="Selected company logo" />
-                            <div><strong>@logoFileName</strong><small>Click to choose a different logo</small></div>
+                            <span><strong>@logoFileName</strong><small>Click to change logo</small></span>
                         }
                         else
                         {
-                            <span class="upload-icon"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M5 14v5h14v-5"/></svg></span>
-                            <div><strong>Drop your logo here or <u>browse</u></strong><small>PNG, JPG, WEBP or SVG · Maximum 2 MB</small></div>
+                            <span class="upload-icon"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M5 14v5h14v-5" /></svg></span>
+                            <span><strong>Choose company logo</strong><small>PNG, JPG, WEBP or SVG · Max 2 MB</small></span>
                         }
                     </label>
-                    @if (!string.IsNullOrWhiteSpace(formError))
-                    {
-                        <div class="form-error" role="alert">@formError</div>
-                    }
+                </div>
 
-                    <button class="save-company" type="submit" disabled="@isSaving">
-                        @if (isSaving) { <span class="button-loader"></span> }
-                        <span>@(isSaving ? "Saving company…" : "Save company & continue")</span>
-                        @if (!isSaving) { <span>→</span> }
-                    </button>
-                    <p class="secure-note"><svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5z"/></svg> Your company profile is stored securely.</p>
-                </EditForm>
-            </div>
+                @if (!string.IsNullOrWhiteSpace(formError))
+                {
+                    <div class="form-error" role="alert">@formError</div>
+                }
+
+                <button class="primary-button" type="submit" disabled="@isSaving">
+                    @if (isSaving) { <span class="button-loader"></span> }
+                    @(isSaving ? "Saving…" : "Save and continue")
+                    @if (!isSaving) { <span aria-hidden="true">→</span> }
+                </button>
+            </EditForm>
         </section>
     }
     else
     {
-        <section class="hero">
-            <div class="hero-copy">
-                <span class="eyebrow"><span></span> Smart workforce management</span>
-                <h1>Welcome to<br /><em>@(company?.CompanyName ?? "your HR workspace")</em></h1>
-                <p>Attendance, people and payroll—brought together in one calm, reliable workspace.</p>
-                <div class="hero-stats">
-                    <div><strong>One</strong><span>connected platform</span></div><i></i>
-                    <div><strong>24/7</strong><span>secure access</span></div><i></i>
-                    <div><strong>100%</strong><span>payroll clarity</span></div>
-                </div>
+        <section class="welcome-content">
+            <div class="welcome-copy">
+                <span class="kicker">Employee management system</span>
+                <h1>Welcome to<br /><em>@company.CompanyName</em></h1>
+                <p>Choose your portal below to securely access the attendance and payroll system.</p>
             </div>
-            <div class="hero-visual" aria-hidden="true">
-                <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
-                <div class="glass-card attendance-card">
-                    <span class="mini-icon mint"><svg viewBox="0 0 24 24"><path d="M8 3v3M16 3v3M4 9h16M5 5h14v16H5zM8 13h3v3H8z"/></svg></span>
-                    <div><small>Today’s attendance</small><strong>92.4%</strong></div><span class="trend">↗ 4.2%</span>
-                </div>
-                <div class="glass-card payroll-card">
-                    <span class="mini-icon blue"><svg viewBox="0 0 24 24"><path d="M4 7h16v12H4zM16 11h4M7 4h10v3"/></svg></span>
-                    <div><small>Payroll status</small><strong>Ready</strong></div><span class="status-pill"><i></i> On track</span>
-                </div>
-                <div class="people-stack"><span>AJ</span><span>SK</span><span>NM</span><span>+24</span></div>
-                <div class="visual-center">
-                    @if (company?.LogoDataUrl is not null)
-                    {
-                        <img src="@company.LogoDataUrl" alt="" />
-                    }
-                    else
-                    {
-                        <svg viewBox="0 0 48 48"><path d="M12 11h24a5 5 0 0 1 5 5v17a5 5 0 0 1-5 5H12a5 5 0 0 1-5-5V16a5 5 0 0 1 5-5Z"/><path d="M18 11V7h12v4M7 22h34M19 28h10"/></svg>
-                    }
-                </div>
-            </div>
-        </section>
 
-        <section class="login-section" id="login-access">
-            <div class="section-heading">
-                <div><span class="eyebrow"><span></span> Secure sign in</span><h2>Choose your workspace</h2></div>
-                <p>Select your role to continue to the right dashboard.</p>
-            </div>
-            <div class="login-grid">
-                <article class="login-card admin-card @(highlightedRole == "admin" ? "highlighted" : "")">
-                    <div class="card-topline"><span>Company access</span><span class="access-badge">Full access</span></div>
-                    <div class="login-icon admin-icon"><svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-4Z"/><path d="m9 12 2 2 4-4"/></svg></div>
-                    <h3>Administrator</h3>
-                    <p>Manage company settings, teams, permissions and complete payroll operations.</p>
-                    <ul><li><span>✓</span> Company-wide controls</li><li><span>✓</span> Payroll & finance access</li></ul>
-                    <button type="button" class="login-button admin-button">Continue as Admin <span>→</span></button>
+            <div class="portal-grid" aria-label="Login options">
+                <article class="portal-card admin-card">
+                    <div class="portal-icon">
+                        <svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-4Z" /><path d="m9 12 2 2 4-4" /></svg>
+                    </div>
+                    <div class="portal-copy">
+                        <span>Company access</span>
+                        <h2>Administrator</h2>
+                        <p>Sign in to manage company settings and system access.</p>
+                    </div>
+                    <a class="portal-button" href="/login/admin">Admin login <span>→</span></a>
                 </article>
 
-                <article class="login-card hr-card @(highlightedRole == "hr" ? "highlighted" : "")">
-                    <div class="card-topline"><span>Branch access</span><span class="access-badge">HR workspace</span></div>
-                    <div class="login-icon hr-icon"><svg viewBox="0 0 24 24"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM17 11l2 2 4-4"/></svg></div>
-                    <h3>HR Manager</h3>
-                    <p>Manage employees, attendance, leave requests and branch payroll workflows.</p>
-                    <ul><li><span>✓</span> Employee & attendance tools</li><li><span>✓</span> Branch-level operations</li></ul>
-                    <button type="button" class="login-button hr-button">Continue as HR Manager <span>→</span></button>
+                <article class="portal-card hr-card">
+                    <div class="portal-icon">
+                        <svg viewBox="0 0 24 24"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM17 11l2 2 4-4" /></svg>
+                    </div>
+                    <div class="portal-copy">
+                        <span>HR access</span>
+                        <h2>HR Manager</h2>
+                        <p>Sign in to manage employees and daily HR operations.</p>
+                    </div>
+                    <a class="portal-button" href="/login/hr">HR login <span>→</span></a>
                 </article>
             </div>
         </section>
     }
 
-    <footer>
-        <span>© @DateTime.Now.Year @(company?.CompanyName ?? "HR Orbit")</span>
-        <span class="footer-status"><i></i> Systems operational</span>
-        <span>HR · Attendance · Payroll</span>
+    <footer class="site-footer">
+        <span>© @DateTime.Now.Year @(company?.CompanyName ?? "Attendance & Payroll")</span>
+        <span>Secure access · Authorized users only</span>
     </footer>
 </main>
 
@@ -190,39 +145,23 @@
     private string? logoPreview;
     private string? logoFileName;
     private string? formError;
-    private string? highlightedRole;
     private bool isLoading = true;
     private bool isSaving;
-    private bool showCompanyPanel;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             company = await CompanyService.GetAsync();
-            showCompanyPanel = company is null;
         }
         catch (Exception)
         {
-            formError = "The company profile could not be loaded. Please confirm the database connection.";
+            formError = "Company profile could not be loaded. Please check the database connection.";
         }
         finally
         {
             isLoading = false;
         }
-    }
-
-    private void OpenCompanyPanel()
-    {
-        if (company is null) showCompanyPanel = true;
-    }
-
-    private void CloseCompanyPanel() => showCompanyPanel = false;
-
-    private void SelectRole(string role)
-    {
-        showCompanyPanel = false;
-        highlightedRole = role;
     }
 
     private async Task HandleLogoAsync(InputFileChangeEventArgs args)
@@ -233,13 +172,13 @@
 
         if (!allowedTypes.Contains(file.ContentType, StringComparer.OrdinalIgnoreCase))
         {
-            formError = "Please choose a PNG, JPG, WEBP or SVG image.";
+            formError = "Please select a PNG, JPG, WEBP or SVG image.";
             return;
         }
 
         if (file.Size > MaxLogoSize)
         {
-            formError = "The logo must be smaller than 2 MB.";
+            formError = "Logo size must be less than 2 MB.";
             return;
         }
 
@@ -260,12 +199,10 @@
         try
         {
             company = await CompanyService.CreateAsync(companyForm.CompanyName, logoBytes);
-            showCompanyPanel = false;
         }
         catch (PostgresException exception) when (exception.SqlState == "23505")
         {
             company = await CompanyService.GetAsync();
-            showCompanyPanel = false;
         }
         catch (Exception)
         {
