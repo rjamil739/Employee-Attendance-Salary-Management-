@@ -96,7 +96,7 @@
                             {
                                 <tr>
                                     <td>
-                                        <div class="person-cell"><span>@Initials(user.DisplayName)</span><div><strong>@user.DisplayName</strong><small>@@@user.UserName@if (!string.IsNullOrWhiteSpace(user.Email)) { <text> · @user.Email</text> }</small></div></div>
+                                        <div class="person-cell"><div><strong>@user.DisplayName</strong><small>@@@user.UserName@if (!string.IsNullOrWhiteSpace(user.Email)) { <text> · @user.Email</text> }</small></div></div>
                                     </td>
                                     <td><span class="phone-value">@(user.PhoneNumber ?? "—")</span></td>
                                     <td><span class="role-pill">@RoleLabel(user)</span></td>
@@ -284,6 +284,5 @@
     }
 
     private void ShowMessage(string message, bool isError = false) { pageMessage = message; messageIsError = isError; }
-    private static string Initials(string name) => string.Concat(name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(x => char.ToUpperInvariant(x[0])));
     private static string RoleLabel(UserAccountListItem user) => user.Roles.Count == 0 ? "No role" : string.Join(", ", user.Roles.Select(x => x.Replace('_', ' ')));
 }

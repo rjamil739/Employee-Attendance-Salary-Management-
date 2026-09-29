@@ -49,3 +49,24 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* Shared back-button treatment across all management screens */
+.settings-header a,.branch-header a,.sm-header a,.emp-back,.emp-empty.page>a{
+    min-height:39px!important;padding:0 14px!important;display:inline-flex!important;align-items:center!important;
+    width:max-content!important;margin-bottom:18px!important;border:1px solid #d4deea!important;border-radius:8px!important;
+    color:#52657e!important;background:#fff!important;box-shadow:0 6px 18px rgba(24,49,84,.06)!important;
+    font-size:12px!important;font-weight:750!important;text-decoration:none!important;
+    transition:transform .2s ease,border-color .2s ease,color .2s ease,box-shadow .2s ease!important;
+}
+.settings-header a:hover,.branch-header a:hover,.sm-header a:hover,.emp-back:hover,.emp-empty.page>a:hover{
+    color:#2453b2!important;border-color:#aebfe3!important;background:#f7f9ff!important;
+    box-shadow:0 10px 22px rgba(36,83,178,.12)!important;transform:translateY(-2px);
+}
+
+/* Login password visibility control */
+.password-input{padding-right:52px!important}
+.password-toggle{position:absolute;z-index:2;right:7px;top:7px;width:34px;height:34px;padding:0;display:grid;place-items:center;
+    border:0;border-radius:8px;color:#74849a;background:transparent;cursor:pointer;transition:.2s ease}
+.password-toggle:hover,.password-toggle:focus-visible{color:#2857b8;background:#edf3ff;outline:0}
+.password-toggle svg{position:static!important;width:18px!important;height:18px!important}
+.password-toggle .eye-closed{display:none}.password-toggle.showing .eye-open{display:none}.password-toggle.showing .eye-closed{display:block}

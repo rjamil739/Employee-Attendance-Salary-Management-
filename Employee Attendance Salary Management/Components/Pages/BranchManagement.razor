@@ -61,10 +61,6 @@
                     {
                         <article class="branch-card">
                             <div class="card-top">
-                                <div class="branch-logo">
-                                    @if (branch.LogoDataUrl is not null) { <img src="@branch.LogoDataUrl" alt="@branch.Name logo" /> }
-                                    else { <span>@Initials(branch.Name)</span> }
-                                </div>
                                 <div class="card-title"><div><strong>@branch.Name</strong>@if (branch.IsHeadOffice) { <span class="head-office">Head office</span> }</div><small>@branch.Code</small></div>
                                 <span class="status @(branch.IsActive ? "active" : "inactive")"><i></i>@(branch.IsActive ? "Active" : "Inactive")</span>
                             </div>

@@ -47,7 +47,11 @@
                     <label for="password">Password</label>
                     <div class="input-wrap">
                         <svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5zM12 15v2" /></svg>
-                        <input id="password" name="password" type="password" class="login-input" autocomplete="current-password" placeholder="Enter your password" required />
+                        <input id="password" name="password" type="password" class="login-input password-input" autocomplete="current-password" placeholder="Enter your password" required />
+                        <button class="password-toggle" type="button" data-password-toggle="password" aria-label="Show password" aria-pressed="false">
+                            <svg class="eye-open" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <svg class="eye-closed" viewBox="0 0 24 24"><path d="m3 3 18 18M10.6 10.7a2 2 0 0 0 2.7 2.7M9.9 4.2A11.8 11.8 0 0 1 12 4c6 0 10 8 10 8a18 18 0 0 1-2.3 3.2M6.6 6.6C3.8 8.5 2 12 2 12s4 8 10 8a9.8 9.8 0 0 0 4.2-.9"/></svg>
+                        </button>
                     </div>
                 </div>
 
