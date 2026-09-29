@@ -81,15 +81,19 @@
 @if (showForm)
 {
     <div class="modal-backdrop" @onclick="CloseForm">
-        <section class="modal-card" @onclick:stopPropagation="true">
+        <section class="modal-card branch-form-modal" @onclick:stopPropagation="true">
             <header><div><span>@(branchForm.Id is null ? "New branch" : "Edit branch")</span><h2>@(branchForm.Id is null ? "Create branch" : "Update branch")</h2></div><button @onclick="CloseForm">×</button></header>
             <EditForm Model="branchForm" OnValidSubmit="SaveBranchAsync" FormName="branch-form">
                 <DataAnnotationsValidator />
+                <div class="branch-form-intro"><span>▦</span><div><strong>Branch profile</strong><small>Configure the branch identity, branding and availability.</small></div></div>
+                <div class="branch-form-section"><b>General information</b><span>Basic identification used throughout the system.</span></div>
                 <div class="form-grid">
                     <label><span>Branch code</span><InputText @bind-Value="branchForm.Code" disabled="true" placeholder="Generated automatically" /></label>
                     <label><span>Branch name *</span><InputText @bind-Value="branchForm.Name" placeholder="e.g. Lahore Office" /><ValidationMessage For="() => branchForm.Name" /></label>
                 </div>
+                <div class="branch-form-section"><b>Branch branding</b><span>An optional logo for branch-specific documents and views.</span></div>
                 <div class="logo-field"><span>Branch logo <small>Optional · max 2 MB</small></span><label class="logo-picker"><InputFile OnChange="HandleLogoAsync" accept="image/png,image/jpeg,image/webp,image/svg+xml" />@if (logoPreview is not null) { <img src="@logoPreview" alt="Branch logo preview" /><span>Click to replace logo</span> } else { <svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M5 14v5h14v-5" /></svg><span>Choose a logo</span> }</label>@if (logoPreview is not null) { <button type="button" class="remove-logo" @onclick="RemoveLogo">Remove logo</button> }</div>
+                <div class="branch-form-section"><b>Branch status</b><span>Control hierarchy and operational availability.</span></div>
                 <div class="switch-list"><label><InputCheckbox @bind-Value="branchForm.IsHeadOffice" /><span><strong>Head office</strong><small>Mark this as a main company location.</small></span></label><label><InputCheckbox @bind-Value="branchForm.IsActive" /><span><strong>Active branch</strong><small>Inactive branches remain in records.</small></span></label></div>
                 @if (!string.IsNullOrWhiteSpace(formError)) { <div class="form-error">@formError</div> }
                 <footer><button type="button" class="secondary" @onclick="CloseForm">Cancel</button><button class="save" type="submit" disabled="@isSaving">@(isSaving ? "Saving…" : branchForm.Id is null ? "Create branch" : "Save changes")</button></footer>

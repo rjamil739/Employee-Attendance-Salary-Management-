@@ -6,3 +6,12 @@ public sealed record AuthenticatedUser(
     string DisplayName,
     bool HasAllBranchAccess,
     IReadOnlyList<string> Roles);
+
+public enum AuthenticationStatus
+{
+    Success,
+    InvalidCredentials,
+    AccessTerminated
+}
+
+public sealed record AuthenticationAttempt(AuthenticationStatus Status, AuthenticatedUser? User = null);

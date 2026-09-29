@@ -10,14 +10,14 @@ public sealed class AuthenticationService
 {
     private readonly PasswordHasher<PasswordIdentity> passwordHasher = new();
 
-    public async Task<AuthenticatedUser?> ValidateAsync(
+    public async Task<AuthenticationAttempt> ValidateAsync(
         string userName,
         string password,
         string requiredRole,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrEmpty(password))
-            return null;
+            return new(AuthenticationStatus.InvalidCredentials);
 
         await using var connection = new NpgsqlConnection(StaticConnection.conn);
         await connection.OpenAsync(cancellationToken);
@@ -29,12 +29,12 @@ public sealed class AuthenticationService
                 ua.display_name,
                 ua.password_hash,
                 ua.has_all_branch_access,
+                ua.is_active,
                 COALESCE(array_agg(r.code) FILTER (WHERE r.code IS NOT NULL), ARRAY[]::varchar[]) AS roles
             FROM auth.user_account ua
             LEFT JOIN auth.user_role ur ON ur.user_id = ua.id
             LEFT JOIN auth.role r ON r.id = ur.role_id
             WHERE lower(ua.user_name) = lower(@user_name)
-              AND ua.is_active = true
             GROUP BY ua.id
             LIMIT 1
             """;
@@ -44,20 +44,21 @@ public sealed class AuthenticationService
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
         if (!await reader.ReadAsync(cancellationToken))
-            return null;
+            return new(AuthenticationStatus.InvalidCredentials);
 
         var id = reader.GetGuid(0);
         var storedUserName = reader.GetString(1);
         var displayName = reader.GetString(2);
         var passwordHash = reader.IsDBNull(3) ? null : reader.GetString(3);
         var hasAllBranchAccess = reader.GetBoolean(4);
-        var roles = reader.GetFieldValue<string[]>(5);
+        var isActive = reader.GetBoolean(5);
+        var roles = reader.GetFieldValue<string[]>(6);
         await reader.CloseAsync();
 
-        if (passwordHash is null || !roles.Contains(requiredRole, StringComparer.OrdinalIgnoreCase))
+        if (passwordHash is null)
         {
             await RecordFailedAttemptAsync(connection, id, cancellationToken);
-            return null;
+            return new(AuthenticationStatus.InvalidCredentials);
         }
 
         var identity = new PasswordIdentity(id, storedUserName);
@@ -65,7 +66,16 @@ public sealed class AuthenticationService
         if (verification == PasswordVerificationResult.Failed)
         {
             await RecordFailedAttemptAsync(connection, id, cancellationToken);
-            return null;
+            return new(AuthenticationStatus.InvalidCredentials);
+        }
+
+        if (!isActive)
+            return new(AuthenticationStatus.AccessTerminated);
+
+        if (!roles.Contains(requiredRole, StringComparer.OrdinalIgnoreCase))
+        {
+            await RecordFailedAttemptAsync(connection, id, cancellationToken);
+            return new(AuthenticationStatus.InvalidCredentials);
         }
 
         var newHash = verification == PasswordVerificationResult.SuccessRehashNeeded
@@ -84,7 +94,8 @@ public sealed class AuthenticationService
         successCommand.Parameters.AddWithValue("new_hash", newHash is null ? DBNull.Value : newHash);
         await successCommand.ExecuteNonQueryAsync(cancellationToken);
 
-        return new AuthenticatedUser(id, storedUserName, displayName, hasAllBranchAccess, roles);
+        return new(AuthenticationStatus.Success,
+            new AuthenticatedUser(id, storedUserName, displayName, hasAllBranchAccess, roles));
     }
 
     public ClaimsPrincipal CreatePrincipal(AuthenticatedUser user)

@@ -106,10 +106,18 @@
                                         <div class="row-actions">
                                             <button class="password-action" title="Change password" @onclick="() => OpenPassword(user)"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4" /><path d="m11 12 8-8M16 7l3 3M14 9l2 2" /></svg> Password</button>
                                             <button class="edit-action" title="Edit user" @onclick="() => OpenEdit(user)"><svg viewBox="0 0 24 24"><path d="m14 5 5 5M4 20l4-1 11-11-4-4L4 15z" /></svg> Edit</button>
-                                            <button class="toggle-action @(user.IsActive ? "deactivate" : "activate")" disabled="@(user.Id == currentUserId && user.IsActive)" title="@(user.IsActive ? "Deactivate user" : "Activate user")" @onclick="() => ToggleActiveAsync(user)">
-                                                <svg viewBox="0 0 24 24"><path d="M12 2v10M6.3 5.3a9 9 0 1 0 11.4 0" /></svg>
-                                                <span>@(user.IsActive ? "Disable" : "Enable")</span>
-                                            </button>
+                                            @if (user.IsActive)
+                                            {
+                                                <button class="toggle-action deactivate" disabled="@(user.Id == currentUserId)" title="Disable user" @onclick="() => ToggleActiveAsync(user)">
+                                                    <svg viewBox="0 0 24 24"><path d="M12 2v10M6.3 5.3a9 9 0 1 0 11.4 0" /></svg><span>Disable</span>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button class="toggle-action activate" title="Enable user" @onclick="() => ToggleActiveAsync(user)">
+                                                    <svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></svg><span>Enable</span>
+                                                </button>
+                                            }
                                         </div>
                                     </td>
                                 </tr>

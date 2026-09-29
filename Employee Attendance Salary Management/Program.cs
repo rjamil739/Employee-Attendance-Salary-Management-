@@ -1,4 +1,5 @@
 using Employee_Attendance_Salary_Management.Components;
+using Employee_Attendance_Salary_Management.Models;
 using Employee_Attendance_Salary_Management.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -61,9 +62,12 @@ app.MapPost("/auth/login", async (HttpContext context, IAntiforgery antiforgery,
     var portal = form["portal"].ToString().Equals("hr", StringComparison.OrdinalIgnoreCase) ? "hr" : "admin";
     var requiredRole = portal == "hr" ? "HR_MANAGER" : "ADMIN";
 
-    var user = await authenticationService.ValidateAsync(userName, password, requiredRole);
-    if (user is null)
+    var attempt = await authenticationService.ValidateAsync(userName, password, requiredRole);
+    if (attempt.Status == AuthenticationStatus.AccessTerminated)
+        return Results.LocalRedirect($"/login/{portal}?error=terminated");
+    if (attempt.Status != AuthenticationStatus.Success || attempt.User is null)
         return Results.LocalRedirect($"/login/{portal}?error=invalid");
+    var user = attempt.User;
 
     var isPersistent = form["rememberMe"].ToString().Equals("on", StringComparison.OrdinalIgnoreCase);
     await context.SignInAsync(
