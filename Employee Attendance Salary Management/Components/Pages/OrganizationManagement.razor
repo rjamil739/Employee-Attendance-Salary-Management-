@@ -1,0 +1,54 @@
+@page "/dashboard/admin/settings/organization"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles="ADMIN")]
+@using System.Security.Claims
+@using Employee_Attendance_Salary_Management.Models
+@using Employee_Attendance_Salary_Management.Services
+@using Npgsql
+@inject AuthenticationStateProvider AuthState
+@inject OrganizationService Service
+@inject BranchService BranchService
+
+<PageTitle>Organization Settings</PageTitle>
+<div class="sm-shell"><SettingsSidebar Active="organization" /><main class="sm-main">
+    <header class="sm-header"><div><a href="/dashboard/admin">← Back to dashboard</a><span class="sm-kicker">Organization settings</span><h1>Departments & designations</h1><p>Manage the company structure separately for every branch.</p></div><button class="sm-primary" @onclick="OpenNew">+ Add @(tab=="departments"?"department":"designation")</button></header>
+    @if(message is not null){<div class="sm-notice @(isError?"error":null)">@message</div>}
+    <div class="sm-tabs"><button class="@(tab=="departments"?"active":null)" @onclick="ShowDepartments">Departments (@departments.Count)</button><button class="@(tab=="designations"?"active":null)" @onclick="ShowDesignations">Designations (@designations.Count)</button></div>
+    <section class="sm-panel"><div class="sm-panel-head"><div><h2>@(tab=="departments"?"All departments":"All designations")</h2><p>Branch-linked organization records from the database.</p></div><input class="sm-search" value="@search" @oninput="e=>search=e.Value?.ToString()??string.Empty" placeholder="Search by name, code or branch" /></div>
+    @if(loading){<div class="sm-empty">Loading organization…</div>}
+    else if(tab=="departments"){
+      <div class="sm-table-wrap"><table class="sm-table"><thead><tr><th>Department</th><th>Branch</th><th>Parent</th><th>Status</th><th></th></tr></thead><tbody>
+      @foreach(var x in FilteredDepartments){<tr><td><strong>@x.Name</strong><span class="sm-sub">@x.Code</span></td><td>@x.BranchName</td><td>@(x.ParentDepartmentName??"Top level")</td><td><span class="sm-badge @(x.IsActive?"on":"off")">@(x.IsActive?"Active":"Inactive")</span></td><td><div class="sm-actions"><button class="action-edit" @onclick="()=>EditDepartment(x)">✎ Edit</button><button class="@(x.IsActive?"action-danger":"action-enable")" @onclick="()=>ToggleDepartment(x)">@(x.IsActive?"▣ Disable":"✓ Enable")</button></div></td></tr>}
+      </tbody></table></div>
+    }else{
+      <div class="sm-table-wrap"><table class="sm-table"><thead><tr><th>Designation</th><th>Department</th><th>Branch</th><th>Grade</th><th>Status</th><th></th></tr></thead><tbody>
+      @foreach(var x in FilteredDesignations){<tr><td><strong>@x.Name</strong><span class="sm-sub">@x.Code</span></td><td>@x.DepartmentName</td><td>@x.BranchName</td><td>@(x.Grade??"—")</td><td><span class="sm-badge @(x.IsActive?"on":"off")">@(x.IsActive?"Active":"Inactive")</span></td><td><div class="sm-actions"><button class="action-edit" @onclick="()=>EditDesignation(x)">✎ Edit</button><button class="@(x.IsActive?"action-danger":"action-enable")" @onclick="()=>ToggleDesignation(x)">@(x.IsActive?"▣ Disable":"✓ Enable")</button></div></td></tr>}
+      </tbody></table></div>
+    }</section>
+</main></div>
+
+@if(showDepartment){<div class="sm-modal-bg" @onclick="Close"><section class="sm-modal" @onclick:stopPropagation="true"><header><div><span>Organization</span><h2>@(departmentForm.Id is null?"Create department":"Edit department")</h2></div><button class="sm-close" @onclick="Close">×</button></header><EditForm class="sm-form" Model="departmentForm" OnValidSubmit="SaveDepartment" FormName="department-form"><DataAnnotationsValidator/><div class="sm-grid">
+<label class="sm-field">Branch *<InputSelect @bind-Value="departmentForm.BranchId"><option value="">Select branch</option>@foreach(var b in branches.Where(x=>x.IsActive)){<option value="@b.Id">@b.Name</option>}</InputSelect><ValidationMessage For="()=>departmentForm.BranchId"/></label>
+<label class="sm-field">Parent department<InputSelect @bind-Value="departmentForm.ParentDepartmentId"><option value="">Top level</option>@foreach(var d in departments.Where(x=>x.BranchId==departmentForm.BranchId&&x.Id!=departmentForm.Id)){<option value="@d.Id">@d.Name</option>}</InputSelect></label>
+<label class="sm-field">Code<InputText @bind-Value="departmentForm.Code" disabled="true" placeholder="Generated automatically"/></label><label class="sm-field">Name *<InputText @bind-Value="departmentForm.Name"/><ValidationMessage For="()=>departmentForm.Name"/></label><label class="sm-check full"><InputCheckbox @bind-Value="departmentForm.IsActive"/> Active department</label></div>@FormError<footer class="sm-footer"><button type="button" class="sm-cancel" @onclick="Close">Cancel</button><button class="sm-save" disabled="@saving">Save department</button></footer></EditForm></section></div>}
+
+@if(showDesignation){<div class="sm-modal-bg" @onclick="Close"><section class="sm-modal" @onclick:stopPropagation="true"><header><div><span>Organization</span><h2>@(designationForm.Id is null?"Create designation":"Edit designation")</h2></div><button class="sm-close" @onclick="Close">×</button></header><EditForm class="sm-form" Model="designationForm" OnValidSubmit="SaveDesignation" FormName="designation-form"><DataAnnotationsValidator/><div class="sm-grid">
+<label class="sm-field">Branch *<InputSelect @bind-Value="designationForm.BranchId"><option value="">Select branch</option>@foreach(var b in branches.Where(x=>x.IsActive)){<option value="@b.Id">@b.Name</option>}</InputSelect></label>
+<label class="sm-field">Department *<InputSelect @bind-Value="designationForm.DepartmentId"><option value="">Select department</option>@foreach(var d in departments.Where(x=>x.BranchId==designationForm.BranchId&&x.IsActive)){<option value="@d.Id">@d.Name</option>}</InputSelect></label>
+<label class="sm-field">Code<InputText @bind-Value="designationForm.Code" disabled="true" placeholder="Generated automatically"/></label><label class="sm-field">Name *<InputText @bind-Value="designationForm.Name"/></label><label class="sm-field">Grade<InputText @bind-Value="designationForm.Grade" placeholder="e.g. G-07"/></label><label class="sm-check"><InputCheckbox @bind-Value="designationForm.IsActive"/> Active designation</label></div>@FormError<footer class="sm-footer"><button type="button" class="sm-cancel" @onclick="Close">Cancel</button><button class="sm-save" disabled="@saving">Save designation</button></footer></EditForm></section></div>}
+
+@code{
+ private IReadOnlyList<DepartmentItem> departments=[];private IReadOnlyList<DesignationItem> designations=[];private IReadOnlyList<BranchListItem> branches=[];private DepartmentFormModel departmentForm=new();private DesignationFormModel designationForm=new();private Guid actor;private string tab="departments",search="";private string? message,formError;private bool isError,loading=true,saving,showDepartment,showDesignation;
+ private IEnumerable<DepartmentItem> FilteredDepartments=>departments.Where(x=>Match(x.Name,x.Code,x.BranchName));private IEnumerable<DesignationItem> FilteredDesignations=>designations.Where(x=>Match(x.Name,x.Code,x.BranchName,x.DepartmentName));private bool Match(params string[] values)=>string.IsNullOrWhiteSpace(search)||values.Any(x=>x.Contains(search,StringComparison.OrdinalIgnoreCase));private RenderFragment FormError=>b=>{if(formError is not null){b.OpenElement(0,"div");b.AddAttribute(1,"class","sm-form-error");b.AddContent(2,formError);b.CloseElement();}};
+ protected override async Task OnInitializedAsync(){try{var u=(await AuthState.GetAuthenticationStateAsync()).User;actor=Guid.Parse(u.FindFirstValue(ClaimTypes.NameIdentifier)!);await Reload();branches=await BranchService.GetAllAsync();}catch{Notice("Organization data could not be loaded.",true);}finally{loading=false;}}
+ private async Task Reload(){departments=await Service.GetDepartmentsAsync();designations=await Service.GetDesignationsAsync();}
+ private void ShowDepartments()=>tab="departments";private void ShowDesignations()=>tab="designations";
+ private void OpenNew(){formError=null;if(tab=="departments"){departmentForm=new(){IsActive=true};showDepartment=true;}else{designationForm=new(){IsActive=true};showDesignation=true;}}
+ private void EditDepartment(DepartmentItem x){departmentForm=new(){Id=x.Id,BranchId=x.BranchId,ParentDepartmentId=x.ParentDepartmentId,Code=x.Code,Name=x.Name,IsActive=x.IsActive};formError=null;showDepartment=true;}
+ private void EditDesignation(DesignationItem x){designationForm=new(){Id=x.Id,BranchId=x.BranchId,DepartmentId=x.DepartmentId,Code=x.Code,Name=x.Name,Grade=x.Grade,IsActive=x.IsActive};formError=null;showDesignation=true;}
+ private void Close(){if(!saving){showDepartment=false;showDesignation=false;}}
+ private async Task SaveDepartment(){await Save(async()=>await Service.SaveDepartmentAsync(departmentForm,actor),"Department saved.");}
+ private async Task SaveDesignation(){await Save(async()=>await Service.SaveDesignationAsync(designationForm,actor),"Designation saved.");}
+ private async Task Save(Func<Task> action,string ok){saving=true;formError=null;try{await action();await Reload();Close();Notice(ok);}catch(PostgresException e)when(e.SqlState==PostgresErrorCodes.UniqueViolation){formError="This code already exists in the selected location.";}catch(Exception e){formError=e is InvalidOperationException?e.Message:"Record could not be saved.";}finally{saving=false;if(formError is null){showDepartment=false;showDesignation=false;}}}
+ private async Task ToggleDepartment(DepartmentItem x){await Service.SetActiveAsync("department",x.Id,!x.IsActive,actor);await Reload();Notice("Department status updated.");}private async Task ToggleDesignation(DesignationItem x){await Service.SetActiveAsync("designation",x.Id,!x.IsActive,actor);await Reload();Notice("Designation status updated.");}private void Notice(string x,bool error=false){message=x;isError=error;}
+}

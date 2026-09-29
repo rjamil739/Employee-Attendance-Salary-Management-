@@ -10,7 +10,7 @@
     <a class="back-home" href="/"><span>←</span> Back to home</a>
 
     <section class="login-shell">
-        <div class="login-brand-panel">
+        <div class="login-form-panel">
             <div class="company-brand">
                 @if (company?.LogoDataUrl is not null)
                 {
@@ -20,29 +20,15 @@
                 {
                     <span><svg viewBox="0 0 24 24"><path d="M4 20V7l8-3v16M4 20h16M12 9h8v11" /></svg></span>
                 }
-                <strong>@(company?.CompanyName ?? "Employee Portal")</strong>
+                <div><strong>@(company?.CompanyName ?? "Employee Portal")</strong><small>Attendance &amp; Payroll</small></div>
             </div>
-            <div class="brand-message">
-                <span class="eyebrow">Secure portal</span>
-                <h1>Welcome<br />back.</h1>
-                <p>Sign in with your authorized account to continue.</p>
+            <div class="form-heading">
+                <div class="role-icon">
+                    @if (IsHr) { <svg viewBox="0 0 24 24"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM17 11l2 2 4-4" /></svg> }
+                    else { <svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-4Z" /><path d="m9 12 2 2 4-4" /></svg> }
+                </div>
+                <div><span class="role-label">@RoleTitle access</span><h2>Sign in to your account</h2></div>
             </div>
-            <small>Attendance & Payroll Management</small>
-        </div>
-
-        <div class="login-form-panel">
-            <div class="role-icon">
-                @if (IsHr)
-                {
-                    <svg viewBox="0 0 24 24"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM17 11l2 2 4-4" /></svg>
-                }
-                else
-                {
-                    <svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-4Z" /><path d="m9 12 2 2 4-4" /></svg>
-                }
-            </div>
-            <span class="role-label">@RoleTitle access</span>
-            <h2>Sign in to your account</h2>
             <p class="form-subtitle">Enter your account details below.</p>
 
             <form method="post" action="/auth/login">

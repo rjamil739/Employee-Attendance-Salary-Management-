@@ -69,9 +69,36 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round
 .module-card > strong { color: #1a3153; font-size: 18px; text-align: right; }
 .module-card > strong small { display: block; color: #929dac; font-size: 7px; font-weight: 600; }
 .module-meta { grid-column: 2 / -1; margin-top: -12px; color: #8592a3; font-size: 7px; }
+.manage-users-link { width: max-content; color: #3159b5; font-weight: 800; text-decoration: none; }
+.manage-users-link:hover { text-decoration: underline; }
+
+/* Compact professional dashboard cards */
+.summary-grid { gap: 18px; }
+.summary-card { min-height: 155px; padding: 22px 16px 19px; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; border-bottom: 5px solid; border-radius: 15px; }
+.summary-card.blue { border-bottom-color: #2f79ef; }
+.summary-card.violet { border-bottom-color: #9a49b7; }
+.summary-card.green { border-bottom-color: #27be6b; }
+.summary-card.orange { border-bottom-color: #f0be0b; }
+.summary-icon { width: 44px; height: 44px; border-radius: 12px; }
+.summary-icon svg { width: 23px; }
+.summary-card strong { margin: 6px 0 4px; font-size: 27px; }
+.summary-card small { font-size: 10px; text-transform: uppercase; letter-spacing: .35px; }
+.summary-card div span { font-size: 9px; }
+.module-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.module-card { min-height: 150px; padding: 19px; grid-template-columns: 46px 1fr; align-content: center; border-bottom: 4px solid #2f79ef; }
+.module-card:nth-child(2n) { border-bottom-color: #22aa86; }
+.module-card:nth-child(3n) { border-bottom-color: #9b4eb7; }
+.module-card:nth-child(4n) { border-bottom-color: #eeae10; }
+.module-card:nth-child(5n) { border-bottom-color: #df4d4d; }
+.module-card h3 { font-size: 13px; }
+.module-card p { margin-top: 4px; font-size: 10px; line-height: 1.45; }
+.module-card > strong { grid-column: 1 / -1; margin-top: 8px; font-size: 23px; text-align: center; }
+.module-card > strong small { display: inline; margin-left: 3px; font-size: 10px; }
+.module-meta { grid-column: 1 / -1; margin-top: -4px; font-size: 9px; text-align: center; }
 
 @media (max-width: 1050px) {
     .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
     .dashboard-shell { grid-template-columns: 1fr; }

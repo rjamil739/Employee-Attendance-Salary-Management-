@@ -1,0 +1,289 @@
+@page "/dashboard/admin/settings/users"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "ADMIN")]
+@using System.Security.Claims
+@using Employee_Attendance_Salary_Management.Models
+@using Employee_Attendance_Salary_Management.Services
+@using Npgsql
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserAccountService UserAccountService
+@inject CompanyProfileService CompanyService
+
+<PageTitle>User Management</PageTitle>
+
+<div class="settings-shell">
+    <aside class="settings-sidebar">
+        <a class="settings-brand" href="/dashboard/admin">
+            @if (company?.LogoDataUrl is not null)
+            {
+                <img src="@company.LogoDataUrl" alt="@company.CompanyName logo" />
+            }
+            else
+            {
+                <span class="brand-mark"><svg viewBox="0 0 24 24"><path d="M4 20V7l8-3v16M4 20h16M12 9h8v11" /></svg></span>
+            }
+            <span><strong>@(company?.CompanyName ?? "HR Portal")</strong><small>Attendance & Payroll</small></span>
+        </a>
+
+        <nav class="settings-nav">
+            <a href="/dashboard/admin"><svg viewBox="0 0 24 24"><path d="M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-3H4zM14 7h6V4h-6z" /></svg> Overview</a>
+            <span>Settings</span>
+            <a class="active" href="/dashboard/admin/settings/users"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M8.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M17 8h6M20 5v6" /></svg> User management</a>
+            <a href="/dashboard/admin/settings/branches"><svg viewBox="0 0 24 24"><path d="M4 20V7l8-3v16M4 20h16M12 9h8v11M8 9v.01M8 13v.01M16 13v.01" /></svg> Branch management</a>
+            <a href="/dashboard/admin/settings/organization">Organization</a>
+            <a href="/dashboard/admin/settings/contractors">Contractors</a>
+            <a href="/dashboard/admin/settings/access">Access control</a>
+        </nav>
+
+        <form method="post" action="/auth/logout" class="settings-logout">
+            <AntiforgeryToken />
+            <button type="submit"><svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5M15 12H3M14 3h6v18h-6" /></svg> Sign out</button>
+        </form>
+    </aside>
+
+    <main class="settings-main">
+        <header class="settings-header">
+            <div>
+                <a href="/dashboard/admin">← Back to dashboard</a>
+                <span>Administration settings</span>
+                <h1>User management</h1>
+                <p>Create accounts, assign access and keep user details up to date.</p>
+            </div>
+            <button class="primary-action" @onclick="OpenCreate">
+                <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+                Add new user
+            </button>
+        </header>
+
+        @if (!string.IsNullOrWhiteSpace(pageMessage))
+        {
+            <div class="notice @(messageIsError ? "error" : "success")" role="status">
+                <span>@(messageIsError ? "!" : "✓")</span>@pageMessage
+                <button type="button" @onclick="() => pageMessage = null">×</button>
+            </div>
+        }
+
+        <section class="user-stats">
+            <article><span class="stat-icon blue"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M8.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8" /></svg></span><div><strong>@users.Count</strong><small>Total users</small></div></article>
+            <article><span class="stat-icon green"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></svg></span><div><strong>@users.Count(x => x.IsActive)</strong><small>Active accounts</small></div></article>
+            <article><span class="stat-icon amber"><svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-4Z" /></svg></span><div><strong>@users.Count(x => x.Roles.Contains("ADMIN"))</strong><small>Administrators</small></div></article>
+        </section>
+
+        <section class="users-panel">
+            <div class="panel-head">
+                <div><h2>All users</h2><p>Passwords are encrypted and are never displayed.</p></div>
+                <label class="search-box">
+                    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
+                    <input value="@searchText" @oninput="SearchChanged" placeholder="Search name, phone or username" />
+                </label>
+            </div>
+
+            @if (isLoading)
+            {
+                <div class="table-state"><span class="loader"></span> Loading users…</div>
+            }
+            else if (FilteredUsers.Count == 0)
+            {
+                <div class="table-state">No users found.</div>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>User</th><th>Phone</th><th>Role</th><th>Status</th><th>Last login</th><th><span class="sr-only">Actions</span></th></tr></thead>
+                        <tbody>
+                            @foreach (var user in FilteredUsers)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="person-cell"><span>@Initials(user.DisplayName)</span><div><strong>@user.DisplayName</strong><small>@@@user.UserName@if (!string.IsNullOrWhiteSpace(user.Email)) { <text> · @user.Email</text> }</small></div></div>
+                                    </td>
+                                    <td><span class="phone-value">@(user.PhoneNumber ?? "—")</span></td>
+                                    <td><span class="role-pill">@RoleLabel(user)</span></td>
+                                    <td><span class="status-pill @(user.IsActive ? "active" : "inactive")"><i></i>@(user.IsActive ? "Active" : "Inactive")</span></td>
+                                    <td><span class="date-value">@(user.LastLoginAt?.LocalDateTime.ToString("dd MMM yyyy, hh:mm tt") ?? "Never")</span></td>
+                                    <td>
+                                        <div class="row-actions">
+                                            <button class="password-action" title="Change password" @onclick="() => OpenPassword(user)"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4" /><path d="m11 12 8-8M16 7l3 3M14 9l2 2" /></svg> Password</button>
+                                            <button class="edit-action" title="Edit user" @onclick="() => OpenEdit(user)"><svg viewBox="0 0 24 24"><path d="m14 5 5 5M4 20l4-1 11-11-4-4L4 15z" /></svg> Edit</button>
+                                            <button class="toggle-action @(user.IsActive ? "deactivate" : "activate")" disabled="@(user.Id == currentUserId && user.IsActive)" title="@(user.IsActive ? "Deactivate user" : "Activate user")" @onclick="() => ToggleActiveAsync(user)">
+                                                <svg viewBox="0 0 24 24"><path d="M12 2v10M6.3 5.3a9 9 0 1 0 11.4 0" /></svg>
+                                                <span>@(user.IsActive ? "Disable" : "Enable")</span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    </main>
+</div>
+
+@if (showUserForm)
+{
+    <div class="modal-backdrop" @onclick="CloseUserForm">
+        <section class="modal-card user-modal" role="dialog" aria-modal="true" aria-labelledby="user-form-title" @onclick:stopPropagation="true">
+            <header><div><span>@(userForm.Id is null ? "New account" : "Edit account")</span><h2 id="user-form-title">@(userForm.Id is null ? "Create user" : "Update user")</h2></div><button type="button" @onclick="CloseUserForm">×</button></header>
+            <EditForm Model="userForm" OnValidSubmit="SaveUserAsync" FormName="user-account-form">
+                <DataAnnotationsValidator />
+                <div class="form-grid">
+                    <label><span>Display name *</span><InputText @bind-Value="userForm.DisplayName" placeholder="e.g. Ahmed Raza" /><ValidationMessage For="() => userForm.DisplayName" /></label>
+                    <label><span>Username *</span><InputText @bind-Value="userForm.UserName" placeholder="e.g. ahmed.raza" autocomplete="off" /><ValidationMessage For="() => userForm.UserName" /></label>
+                    <label><span>Email address</span><InputText @bind-Value="userForm.Email" type="email" placeholder="name@company.com" /><ValidationMessage For="() => userForm.Email" /></label>
+                    <label><span>Phone number</span><InputText @bind-Value="userForm.PhoneNumber" placeholder="03XX-XXXXXXX" /><ValidationMessage For="() => userForm.PhoneNumber" /></label>
+                    <label class="full"><span>Role *</span><InputSelect @bind-Value="userForm.RoleCode">@foreach (var role in roles) { <option value="@role.Code">@role.Name</option> }</InputSelect><ValidationMessage For="() => userForm.RoleCode" /></label>
+                    @if (userForm.Id is null)
+                    {
+                        <label class="full"><span>Temporary password *</span><InputText @bind-Value="userForm.Password" type="password" placeholder="Minimum 8 characters" autocomplete="new-password" /><ValidationMessage For="() => userForm.Password" /></label>
+                    }
+                </div>
+                <div class="switch-list">
+                    <label><InputCheckbox @bind-Value="userForm.HasAllBranchAccess" /><span><strong>All branch access</strong><small>User can view data from every branch.</small></span></label>
+                    <label><InputCheckbox @bind-Value="userForm.IsActive" disabled="@(userForm.Id == currentUserId)" /><span><strong>Active account</strong><small>Inactive users cannot sign in.</small></span></label>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(formError)) { <div class="form-error">@formError</div> }
+                <footer><button type="button" class="secondary-button" @onclick="CloseUserForm">Cancel</button><button type="submit" class="save-button" disabled="@isSaving">@(isSaving ? "Saving…" : userForm.Id is null ? "Create user" : "Save changes")</button></footer>
+            </EditForm>
+        </section>
+    </div>
+}
+
+@if (showPasswordForm)
+{
+    <div class="modal-backdrop" @onclick="ClosePasswordForm">
+        <section class="modal-card password-modal" role="dialog" aria-modal="true" aria-labelledby="password-form-title" @onclick:stopPropagation="true">
+            <header><div><span>Security</span><h2 id="password-form-title">Change password</h2><p>Set a new password for @passwordForm.DisplayName.</p></div><button type="button" @onclick="ClosePasswordForm">×</button></header>
+            <EditForm Model="passwordForm" OnValidSubmit="SavePasswordAsync" FormName="password-change-form">
+                <DataAnnotationsValidator />
+                <label><span>New password</span><InputText @bind-Value="passwordForm.NewPassword" type="password" autocomplete="new-password" placeholder="Minimum 8 characters" /><ValidationMessage For="() => passwordForm.NewPassword" /></label>
+                <label><span>Confirm password</span><InputText @bind-Value="passwordForm.ConfirmPassword" type="password" autocomplete="new-password" placeholder="Enter password again" /><ValidationMessage For="() => passwordForm.ConfirmPassword" /></label>
+                @if (!string.IsNullOrWhiteSpace(formError)) { <div class="form-error">@formError</div> }
+                <footer><button type="button" class="secondary-button" @onclick="ClosePasswordForm">Cancel</button><button type="submit" class="save-button" disabled="@isSaving">@(isSaving ? "Updating…" : "Update password")</button></footer>
+            </EditForm>
+        </section>
+    </div>
+}
+
+@code {
+    private CompanyProfile? company;
+    private IReadOnlyList<UserAccountListItem> users = [];
+    private IReadOnlyList<UserRoleOption> roles = [];
+    private UserAccountFormModel userForm = new();
+    private PasswordChangeFormModel passwordForm = new();
+    private Guid currentUserId;
+    private string passwordUserName = string.Empty;
+    private string searchText = string.Empty;
+    private string? pageMessage;
+    private string? formError;
+    private bool messageIsError;
+    private bool isLoading = true;
+    private bool isSaving;
+    private bool showUserForm;
+    private bool showPasswordForm;
+
+    private IReadOnlyList<UserAccountListItem> FilteredUsers => string.IsNullOrWhiteSpace(searchText)
+        ? users
+        : users.Where(x => x.DisplayName.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+            || x.UserName.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+            || (x.PhoneNumber?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false)
+            || (x.Email?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var principal = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+            currentUserId = Guid.Parse(principal.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var tasks = new Task[] { LoadUsersAsync(), LoadRolesAsync(), LoadCompanyAsync() };
+            await Task.WhenAll(tasks);
+        }
+        catch (Exception)
+        {
+            ShowMessage("User data could not be loaded. Please check the database connection.", true);
+        }
+        finally { isLoading = false; }
+    }
+
+    private async Task LoadUsersAsync() => users = await UserAccountService.GetUsersAsync();
+    private async Task LoadRolesAsync() => roles = await UserAccountService.GetRolesAsync();
+    private async Task LoadCompanyAsync() => company = await CompanyService.GetAsync();
+    private void SearchChanged(ChangeEventArgs args) => searchText = args.Value?.ToString() ?? string.Empty;
+
+    private void OpenCreate()
+    {
+        userForm = new UserAccountFormModel { RoleCode = roles.FirstOrDefault(x => x.Code == "HR_MANAGER")?.Code ?? roles.FirstOrDefault()?.Code ?? "HR_MANAGER", IsActive = true };
+        formError = null;
+        showUserForm = true;
+    }
+
+    private void OpenEdit(UserAccountListItem user)
+    {
+        userForm = new UserAccountFormModel { Id = user.Id, UserName = user.UserName, DisplayName = user.DisplayName, Email = user.Email, PhoneNumber = user.PhoneNumber, RoleCode = user.Roles.FirstOrDefault(x => x is "ADMIN" or "HR_MANAGER") ?? "HR_MANAGER", HasAllBranchAccess = user.HasAllBranchAccess, IsActive = user.IsActive };
+        formError = null;
+        showUserForm = true;
+    }
+
+    private void OpenPassword(UserAccountListItem user)
+    {
+        passwordUserName = user.UserName;
+        passwordForm = new PasswordChangeFormModel { UserId = user.Id, DisplayName = user.DisplayName };
+        formError = null;
+        showPasswordForm = true;
+    }
+
+    private void CloseUserForm() { if (!isSaving) showUserForm = false; }
+    private void ClosePasswordForm() { if (!isSaving) showPasswordForm = false; }
+
+    private async Task SaveUserAsync()
+    {
+        if (isSaving) return;
+        if (userForm.Id is null && string.IsNullOrWhiteSpace(userForm.Password)) { formError = "A temporary password is required."; return; }
+        isSaving = true;
+        formError = null;
+        try
+        {
+            if (userForm.Id is null) await UserAccountService.CreateAsync(userForm, currentUserId);
+            else await UserAccountService.UpdateAsync(userForm, currentUserId);
+            var wasNew = userForm.Id is null;
+            await LoadUsersAsync();
+            showUserForm = false;
+            ShowMessage(wasNew ? "User account created successfully." : "User details updated successfully.");
+        }
+        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UniqueViolation) { formError = "This username is already in use."; }
+        catch (Exception ex) { formError = ex is InvalidOperationException ? ex.Message : "The user could not be saved. Please try again."; }
+        finally { isSaving = false; }
+    }
+
+    private async Task ToggleActiveAsync(UserAccountListItem user)
+    {
+        try
+        {
+            await UserAccountService.SetActiveAsync(user.Id, !user.IsActive, currentUserId);
+            await LoadUsersAsync();
+            ShowMessage($"{user.DisplayName} is now {(user.IsActive ? "inactive" : "active")}.");
+        }
+        catch (Exception ex) { ShowMessage(ex is InvalidOperationException ? ex.Message : "Account status could not be changed.", true); }
+    }
+
+    private async Task SavePasswordAsync()
+    {
+        if (isSaving) return;
+        isSaving = true;
+        formError = null;
+        try
+        {
+            await UserAccountService.ChangePasswordAsync(passwordForm.UserId, passwordUserName, passwordForm.NewPassword, currentUserId);
+            showPasswordForm = false;
+            ShowMessage($"Password updated for {passwordForm.DisplayName}.");
+        }
+        catch (Exception) { formError = "Password could not be updated. Please try again."; }
+        finally { isSaving = false; }
+    }
+
+    private void ShowMessage(string message, bool isError = false) { pageMessage = message; messageIsError = isError; }
+    private static string Initials(string name) => string.Concat(name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(x => char.ToUpperInvariant(x[0])));
+    private static string RoleLabel(UserAccountListItem user) => user.Roles.Count == 0 ? "No role" : string.Join(", ", user.Roles.Select(x => x.Replace('_', ' ')));
+}

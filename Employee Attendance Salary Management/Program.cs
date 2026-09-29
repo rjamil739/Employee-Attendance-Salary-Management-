@@ -29,6 +29,11 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<CompanyProfileService>();
 builder.Services.AddScoped<AppAuthenticationService>();
 builder.Services.AddScoped<DashboardService>();
+builder.Services.AddScoped<UserAccountService>();
+builder.Services.AddScoped<BranchService>();
+builder.Services.AddScoped<OrganizationService>();
+builder.Services.AddScoped<ContractorService>();
+builder.Services.AddScoped<AccessControlService>();
 
 var app = builder.Build();
 

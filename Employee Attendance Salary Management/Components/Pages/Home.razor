@@ -29,10 +29,11 @@
 
         @if (company is not null)
         {
-            <span class="secure-label">
-                <svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5z" /></svg>
-                Secure employee portal
-            </span>
+            <nav class="home-nav" aria-label="Portal navigation">
+                <a class="active" href="/">Home</a>
+                <a href="/login/admin">Admin</a>
+                <a href="/login/hr">HR Manager</a>
+            </nav>
         }
     </header>
 
@@ -97,35 +98,32 @@
     else
     {
         <section class="welcome-content">
-            <div class="welcome-copy">
-                <span class="kicker">Employee management system</span>
-                <h1>Welcome to<br /><em>@company.CompanyName</em></h1>
-                <p>Choose your portal below to securely access the attendance and payroll system.</p>
+            <div class="page-heading">
+                <span class="kicker">Secure employee portal</span>
+                <h1>@company.CompanyName</h1>
+                <p>Attendance &amp; Payroll Management System</p>
             </div>
-
             <div class="portal-grid" aria-label="Login options">
                 <article class="portal-card admin-card">
-                    <div class="portal-icon">
-                        <svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-4Z" /><path d="m9 12 2 2 4-4" /></svg>
+                    <header>
+                        <div class="portal-icon"><svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-4Z" /><path d="m9 12 2 2 4-4" /></svg></div>
+                        <div><span>Company access</span><h2>Administrator</h2></div>
+                    </header>
+                    <div class="portal-body">
+                        <ul><li>Company and branch settings</li><li>Users, roles and system access</li></ul>
+                        <a class="portal-button" href="/login/admin">Admin login <span>→</span></a>
                     </div>
-                    <div class="portal-copy">
-                        <span>Company access</span>
-                        <h2>Administrator</h2>
-                        <p>Sign in to manage company settings and system access.</p>
-                    </div>
-                    <a class="portal-button" href="/login/admin">Admin login <span>→</span></a>
                 </article>
 
                 <article class="portal-card hr-card">
-                    <div class="portal-icon">
-                        <svg viewBox="0 0 24 24"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM17 11l2 2 4-4" /></svg>
+                    <header>
+                        <div class="portal-icon"><svg viewBox="0 0 24 24"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM17 11l2 2 4-4" /></svg></div>
+                        <div><span>HR access</span><h2>HR Manager</h2></div>
+                    </header>
+                    <div class="portal-body">
+                        <ul><li>Employees and attendance</li><li>Leave and payroll operations</li></ul>
+                        <a class="portal-button" href="/login/hr">HR login <span>→</span></a>
                     </div>
-                    <div class="portal-copy">
-                        <span>HR access</span>
-                        <h2>HR Manager</h2>
-                        <p>Sign in to manage employees and daily HR operations.</p>
-                    </div>
-                    <a class="portal-button" href="/login/hr">HR login <span>→</span></a>
                 </article>
             </div>
         </section>

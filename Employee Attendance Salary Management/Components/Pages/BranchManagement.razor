@@ -1,0 +1,184 @@
+@page "/dashboard/admin/settings/branches"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "ADMIN")]
+@using System.Security.Claims
+@using Employee_Attendance_Salary_Management.Models
+@using Employee_Attendance_Salary_Management.Services
+@using Npgsql
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject BranchService BranchService
+@inject CompanyProfileService CompanyService
+
+<PageTitle>Branch Management</PageTitle>
+
+<div class="branch-shell">
+    <aside class="branch-sidebar">
+        <a class="branch-brand" href="/dashboard/admin">
+            @if (company?.LogoDataUrl is not null) { <img src="@company.LogoDataUrl" alt="@company.CompanyName logo" /> }
+            else { <span class="brand-mark"><svg viewBox="0 0 24 24"><path d="M4 20V7l8-3v16M4 20h16M12 9h8v11" /></svg></span> }
+            <span><strong>@(company?.CompanyName ?? "HR Portal")</strong><small>Attendance & Payroll</small></span>
+        </a>
+        <nav class="branch-nav">
+            <a href="/dashboard/admin"><svg viewBox="0 0 24 24"><path d="M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-3H4zM14 7h6V4h-6z" /></svg> Overview</a>
+            <span>Settings</span>
+            <a href="/dashboard/admin/settings/users"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M8.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M17 8h6M20 5v6" /></svg> User management</a>
+            <a class="active" href="/dashboard/admin/settings/branches"><svg viewBox="0 0 24 24"><path d="M4 20V7l8-3v16M4 20h16M12 9h8v11M8 9v.01M8 13v.01M16 13v.01" /></svg> Branch management</a>
+            <a href="/dashboard/admin/settings/organization">Organization</a>
+            <a href="/dashboard/admin/settings/contractors">Contractors</a>
+            <a href="/dashboard/admin/settings/access">Access control</a>
+        </nav>
+        <form method="post" action="/auth/logout" class="branch-logout"><AntiforgeryToken /><button type="submit"><svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5M15 12H3M14 3h6v18h-6" /></svg> Sign out</button></form>
+    </aside>
+
+    <main class="branch-main">
+        <header class="branch-header">
+            <div><a href="/dashboard/admin">← Back to dashboard</a><span>Administration settings</span><h1>Branch management</h1><p>Add branches, review their details and control operational status.</p></div>
+            <button class="primary-action" @onclick="OpenCreate"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg> Add new branch</button>
+        </header>
+
+        @if (!string.IsNullOrWhiteSpace(pageMessage))
+        {
+            <div class="notice @(messageIsError ? "error" : "success")"><b>@(messageIsError ? "!" : "✓")</b>@pageMessage<button @onclick="() => pageMessage = null">×</button></div>
+        }
+
+        <section class="branch-stats">
+            <article><span class="stat-icon blue"><svg viewBox="0 0 24 24"><path d="M4 20V7l8-3v16M4 20h16M12 9h8v11" /></svg></span><div><strong>@branches.Count</strong><small>Total branches</small></div></article>
+            <article><span class="stat-icon green"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></svg></span><div><strong>@branches.Count(x => x.IsActive)</strong><small>Active branches</small></div></article>
+            <article><span class="stat-icon amber"><svg viewBox="0 0 24 24"><path d="M12 21V3M5 10l7-7 7 7" /></svg></span><div><strong>@branches.Count(x => x.IsHeadOffice)</strong><small>Head offices</small></div></article>
+        </section>
+
+        <section class="branches-panel">
+            <div class="panel-head">
+                <div><h2>All branches</h2><p>Select View to inspect the complete branch record.</p></div>
+                <label class="search-box"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg><input value="@searchText" @oninput="SearchChanged" placeholder="Search branch name or code" /></label>
+            </div>
+            @if (isLoading) { <div class="empty-state"><span class="loader"></span> Loading branches…</div> }
+            else if (FilteredBranches.Count == 0) { <div class="empty-state">No branches found.</div> }
+            else
+            {
+                <div class="branch-grid">
+                    @foreach (var branch in FilteredBranches)
+                    {
+                        <article class="branch-card">
+                            <div class="card-top">
+                                <div class="branch-logo">
+                                    @if (branch.LogoDataUrl is not null) { <img src="@branch.LogoDataUrl" alt="@branch.Name logo" /> }
+                                    else { <span>@Initials(branch.Name)</span> }
+                                </div>
+                                <div class="card-title"><div><strong>@branch.Name</strong>@if (branch.IsHeadOffice) { <span class="head-office">Head office</span> }</div><small>@branch.Code</small></div>
+                                <span class="status @(branch.IsActive ? "active" : "inactive")"><i></i>@(branch.IsActive ? "Active" : "Inactive")</span>
+                            </div>
+                            <dl><div><dt>Branch ID</dt><dd title="@branch.Id">@branch.Id.ToString()[..8]…</dd></div><div><dt>Last updated</dt><dd>@branch.UpdatedAt.LocalDateTime.ToString("dd MMM yyyy")</dd></div></dl>
+                            <div class="card-actions">
+                                <button class="view-button" @onclick="() => OpenDetails(branch)"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></svg> View</button>
+                                <button class="edit-button" @onclick="() => OpenEdit(branch)"><svg viewBox="0 0 24 24"><path d="m14 5 5 5M4 20l4-1 11-11-4-4L4 15z" /></svg> Edit</button>
+                                <button class="@(branch.IsActive ? "danger" : "activate")" @onclick="() => ToggleActiveAsync(branch)"><svg viewBox="0 0 24 24"><path d="M12 2v10M6.3 5.3a9 9 0 1 0 11.4 0" /></svg>@(branch.IsActive ? "Disable" : "Enable")</button>
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+        </section>
+    </main>
+</div>
+
+@if (showForm)
+{
+    <div class="modal-backdrop" @onclick="CloseForm">
+        <section class="modal-card" @onclick:stopPropagation="true">
+            <header><div><span>@(branchForm.Id is null ? "New branch" : "Edit branch")</span><h2>@(branchForm.Id is null ? "Create branch" : "Update branch")</h2></div><button @onclick="CloseForm">×</button></header>
+            <EditForm Model="branchForm" OnValidSubmit="SaveBranchAsync" FormName="branch-form">
+                <DataAnnotationsValidator />
+                <div class="form-grid">
+                    <label><span>Branch code</span><InputText @bind-Value="branchForm.Code" disabled="true" placeholder="Generated automatically" /></label>
+                    <label><span>Branch name *</span><InputText @bind-Value="branchForm.Name" placeholder="e.g. Lahore Office" /><ValidationMessage For="() => branchForm.Name" /></label>
+                </div>
+                <div class="logo-field"><span>Branch logo <small>Optional · max 2 MB</small></span><label class="logo-picker"><InputFile OnChange="HandleLogoAsync" accept="image/png,image/jpeg,image/webp,image/svg+xml" />@if (logoPreview is not null) { <img src="@logoPreview" alt="Branch logo preview" /><span>Click to replace logo</span> } else { <svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M5 14v5h14v-5" /></svg><span>Choose a logo</span> }</label>@if (logoPreview is not null) { <button type="button" class="remove-logo" @onclick="RemoveLogo">Remove logo</button> }</div>
+                <div class="switch-list"><label><InputCheckbox @bind-Value="branchForm.IsHeadOffice" /><span><strong>Head office</strong><small>Mark this as a main company location.</small></span></label><label><InputCheckbox @bind-Value="branchForm.IsActive" /><span><strong>Active branch</strong><small>Inactive branches remain in records.</small></span></label></div>
+                @if (!string.IsNullOrWhiteSpace(formError)) { <div class="form-error">@formError</div> }
+                <footer><button type="button" class="secondary" @onclick="CloseForm">Cancel</button><button class="save" type="submit" disabled="@isSaving">@(isSaving ? "Saving…" : branchForm.Id is null ? "Create branch" : "Save changes")</button></footer>
+            </EditForm>
+        </section>
+    </div>
+}
+
+@if (selectedBranch is not null)
+{
+    <div class="modal-backdrop" @onclick="CloseDetails">
+        <section class="modal-card details-modal" @onclick:stopPropagation="true">
+            <header><div><span>Branch record</span><h2>@selectedBranch.Name</h2></div><button @onclick="CloseDetails">×</button></header>
+            <div class="details-body">
+                <div class="details-hero">@if (selectedBranch.LogoDataUrl is not null) { <img src="@selectedBranch.LogoDataUrl" alt="@selectedBranch.Name logo" /> } else { <span>@Initials(selectedBranch.Name)</span> }<div><h3>@selectedBranch.Name</h3><p>@selectedBranch.Code</p></div><span class="status @(selectedBranch.IsActive ? "active" : "inactive")">@(selectedBranch.IsActive ? "Active" : "Inactive")</span></div>
+                <dl class="details-list"><div><dt>Branch ID</dt><dd>@selectedBranch.Id</dd></div><div><dt>Head office</dt><dd>@(selectedBranch.IsHeadOffice ? "Yes" : "No")</dd></div><div><dt>Created on</dt><dd>@selectedBranch.CreatedAt.LocalDateTime.ToString("dd MMMM yyyy, hh:mm tt")</dd></div><div><dt>Created by</dt><dd>@(selectedBranch.CreatedByName ?? "System")</dd></div><div><dt>Last updated</dt><dd>@selectedBranch.UpdatedAt.LocalDateTime.ToString("dd MMMM yyyy, hh:mm tt")</dd></div><div><dt>Updated by</dt><dd>@(selectedBranch.UpdatedByName ?? "System")</dd></div></dl>
+            </div>
+            <footer><button class="secondary" @onclick="CloseDetails">Close</button><button class="save" @onclick="() => EditFromDetails(selectedBranch)">Edit branch</button></footer>
+        </section>
+    </div>
+}
+
+@code {
+    private const long MaxLogoSize = 2 * 1024 * 1024;
+    private CompanyProfile? company;
+    private IReadOnlyList<BranchListItem> branches = [];
+    private BranchFormModel branchForm = new();
+    private BranchListItem? selectedBranch;
+    private Guid currentUserId;
+    private byte[]? logoBytes;
+    private string? logoPreview;
+    private string searchText = string.Empty;
+    private string? pageMessage;
+    private string? formError;
+    private bool updateLogo;
+    private bool messageIsError;
+    private bool isLoading = true;
+    private bool isSaving;
+    private bool showForm;
+
+    private IReadOnlyList<BranchListItem> FilteredBranches => string.IsNullOrWhiteSpace(searchText) ? branches : branches.Where(x => x.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) || x.Code.Contains(searchText, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { var principal = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User; currentUserId = Guid.Parse(principal.FindFirstValue(ClaimTypes.NameIdentifier)!); await Task.WhenAll(LoadBranchesAsync(), LoadCompanyAsync()); }
+        catch { ShowMessage("Branch data could not be loaded. Please check the database connection.", true); }
+        finally { isLoading = false; }
+    }
+
+    private async Task LoadBranchesAsync() => branches = await BranchService.GetAllAsync();
+    private async Task LoadCompanyAsync() => company = await CompanyService.GetAsync();
+    private void SearchChanged(ChangeEventArgs e) => searchText = e.Value?.ToString() ?? string.Empty;
+    private void OpenCreate() { branchForm = new BranchFormModel { IsActive = true }; logoBytes = null; logoPreview = null; updateLogo = false; formError = null; showForm = true; }
+    private void OpenEdit(BranchListItem b) { branchForm = new BranchFormModel { Id = b.Id, Code = b.Code, Name = b.Name, IsHeadOffice = b.IsHeadOffice, IsActive = b.IsActive }; logoBytes = b.Logo; logoPreview = b.LogoDataUrl; updateLogo = false; formError = null; showForm = true; }
+    private void OpenDetails(BranchListItem b) => selectedBranch = b;
+    private void CloseDetails() => selectedBranch = null;
+    private void EditFromDetails(BranchListItem b) { selectedBranch = null; OpenEdit(b); }
+    private void CloseForm() { if (!isSaving) showForm = false; }
+    private void RemoveLogo() { logoBytes = null; logoPreview = null; updateLogo = true; }
+
+    private async Task HandleLogoAsync(InputFileChangeEventArgs e)
+    {
+        formError = null;
+        var file = e.File;
+        string[] allowed = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
+        if (!allowed.Contains(file.ContentType, StringComparer.OrdinalIgnoreCase)) { formError = "Select a PNG, JPG, WEBP or SVG image."; return; }
+        if (file.Size > MaxLogoSize) { formError = "Logo size must be less than 2 MB."; return; }
+        await using var stream = file.OpenReadStream(MaxLogoSize); using var memory = new MemoryStream(); await stream.CopyToAsync(memory); logoBytes = memory.ToArray(); logoPreview = $"data:{file.ContentType};base64,{Convert.ToBase64String(logoBytes)}"; updateLogo = true;
+    }
+
+    private async Task SaveBranchAsync()
+    {
+        if (isSaving) return; isSaving = true; formError = null;
+        try { var created = branchForm.Id is null; if (created) await BranchService.CreateAsync(branchForm, logoBytes, currentUserId); else await BranchService.UpdateAsync(branchForm, logoBytes, updateLogo, currentUserId); await LoadBranchesAsync(); showForm = false; ShowMessage(created ? "Branch created successfully." : "Branch updated successfully."); }
+        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UniqueViolation) { formError = "This branch code is already in use."; }
+        catch (Exception ex) { formError = ex is InvalidOperationException ? ex.Message : "Branch could not be saved. Please try again."; }
+        finally { isSaving = false; }
+    }
+
+    private async Task ToggleActiveAsync(BranchListItem b)
+    {
+        try { await BranchService.SetActiveAsync(b.Id, !b.IsActive, currentUserId); await LoadBranchesAsync(); ShowMessage($"{b.Name} is now {(b.IsActive ? "inactive" : "active")}."); }
+        catch { ShowMessage("Branch status could not be changed.", true); }
+    }
+
+    private void ShowMessage(string text, bool error = false) { pageMessage = text; messageIsError = error; }
+    private static string Initials(string name) => string.Concat(name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(x => char.ToUpperInvariant(x[0])));
+}

@@ -1,0 +1,42 @@
+@page "/dashboard/admin/settings/access"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles="ADMIN")]
+@using System.Security.Claims
+@using Employee_Attendance_Salary_Management.Models
+@using Employee_Attendance_Salary_Management.Services
+@using Npgsql
+@inject AuthenticationStateProvider AuthState
+@inject AccessControlService Service
+@inject UserAccountService UserService
+@inject BranchService BranchService
+
+<PageTitle>Access Control</PageTitle>
+<div class="sm-shell"><SettingsSidebar Active="access"/><main class="sm-main">
+<header class="sm-header"><div><a href="/dashboard/admin">← Back to dashboard</a><span class="sm-kicker">Security settings</span><h1>Roles & access</h1><p>Manage roles, user-role links and user branch permissions.</p></div>@if(tab=="roles"){<button class="sm-primary" @onclick="NewRole">+ Add role</button>}</header>
+@if(message is not null){<div class="sm-notice @(isError?"error":null)">@message</div>}
+<div class="sm-tabs"><button class="@(tab=="roles"?"active":null)" @onclick="ShowRoles">Roles (@roles.Count)</button><button class="@(tab=="assignments"?"active":null)" @onclick="ShowAssignments">User assignments</button></div>
+@if(tab=="roles"){
+<section class="sm-panel"><div class="sm-panel-head"><div><h2>Application roles</h2><p>System role codes are protected; names and descriptions remain editable.</p></div><input class="sm-search" value="@roleSearch" @oninput="e=>roleSearch=e.Value?.ToString()??string.Empty" placeholder="Search role name, code or description"/></div>@if(loading){<div class="sm-empty">Loading access data…</div>}else if(!FilteredRoles.Any()){<div class="sm-empty">No matching roles found.</div>}else{<div class="sm-table-wrap"><table class="sm-table"><thead><tr><th>Role</th><th>Description</th><th>Scope</th><th>Users</th><th>Type</th><th></th></tr></thead><tbody>@foreach(var x in FilteredRoles){<tr><td><strong>@x.Name</strong><span class="sm-sub">@x.Code</span></td><td>@(x.Description??"—")</td><td><span class="sm-badge">@x.ScopeType</span></td><td>@x.UserCount</td><td>@(x.IsSystem?"System":"Custom")</td><td><div class="sm-actions"><button class="action-edit" @onclick="()=>EditRole(x)">✎ Edit</button></div></td></tr>}</tbody></table></div>}</section>
+}else{
+<section class="sm-panel"><div class="sm-panel-head"><div><h2>User access assignment</h2><p>One screen manages auth.user_role and auth.user_branch.</p></div></div><div class="sm-form">
+<label class="sm-field">Select user<select value="@assignment.UserId" @onchange="UserChanged"><option value="">Choose a user</option>@foreach(var u in users){<option value="@u.Id">@u.DisplayName (@u.UserName)</option>}</select></label>
+@if(assignment.UserId!=Guid.Empty){<div class="sm-grid" style="margin-top:18px"><div class="sm-field"><span>Assigned roles</span><div class="sm-check-list">@foreach(var role in roles){<label><input type="checkbox" checked="@assignment.RoleIds.Contains(role.Id)" @onchange="e=>SetRole(role.Id,e)"/> <span>@role.Name <small>(@role.Code)</small></span></label>}</div></div><div class="sm-field"><span>Assigned branches</span><div class="sm-check-list">@foreach(var branch in branches){<label><input type="checkbox" checked="@assignment.BranchIds.Contains(branch.Id)" @onchange="e=>SetBranch(branch.Id,e)"/> <span>@branch.Name</span></label>}</div></div>
+<label class="sm-check full"><InputCheckbox @bind-Value="assignment.HasAllBranchAccess"/> Allow access to all branches</label><label class="sm-field full">Default branch<select value="@assignment.DefaultBranchId" @onchange="DefaultChanged"><option value="">No default branch</option>@foreach(var b in branches.Where(x=>assignment.BranchIds.Contains(x.Id))){<option value="@b.Id">@b.Name</option>}</select></label></div>
+@if(formError is not null){<div class="sm-form-error">@formError</div>}<footer class="sm-footer"><button class="sm-save" @onclick="SaveAssignment" disabled="@saving">@(saving?"Saving…":"Save user access")</button></footer>}
+</div></section>}
+</main></div>
+
+@if(showRole){<div class="sm-modal-bg" @onclick="CloseRole"><section class="sm-modal" @onclick:stopPropagation="true"><header><div><span>Access role</span><h2>@(roleForm.Id is null?"Create role":"Edit role")</h2></div><button class="sm-close" @onclick="CloseRole">×</button></header><EditForm class="sm-form" Model="roleForm" OnValidSubmit="SaveRole" FormName="role-form"><DataAnnotationsValidator/><div class="sm-grid"><label class="sm-field">Code<InputText @bind-Value="roleForm.Code" disabled="true" placeholder="Generated automatically"/></label><label class="sm-field">Name *<InputText @bind-Value="roleForm.Name"/></label><label class="sm-field">Scope *<InputSelect @bind-Value="roleForm.ScopeType"><option value="branch">Branch</option><option value="company">Company</option></InputSelect></label><label class="sm-field full">Description<InputTextArea @bind-Value="roleForm.Description"/></label></div>@if(formError is not null){<div class="sm-form-error">@formError</div>}<footer class="sm-footer"><button type="button" class="sm-cancel" @onclick="CloseRole">Cancel</button><button class="sm-save" disabled="@saving">Save role</button></footer></EditForm></section></div>}
+
+@code{
+ private IReadOnlyList<RoleItem> roles=[];private IReadOnlyList<UserAccountListItem> users=[];private IReadOnlyList<BranchListItem> branches=[];private RoleFormModel roleForm=new();private UserAccessAssignment assignment=new();private Guid actor,adminRoleId;private string tab="roles",roleSearch="";private string? message,formError;private bool loading=true,saving,showRole,editingSystem,isError;
+ private IEnumerable<RoleItem> FilteredRoles=>roles.Where(x=>string.IsNullOrWhiteSpace(roleSearch)||x.Name.Contains(roleSearch,StringComparison.OrdinalIgnoreCase)||x.Code.Contains(roleSearch,StringComparison.OrdinalIgnoreCase)||(x.Description?.Contains(roleSearch,StringComparison.OrdinalIgnoreCase)??false));
+ protected override async Task OnInitializedAsync(){try{var p=(await AuthState.GetAuthenticationStateAsync()).User;actor=Guid.Parse(p.FindFirstValue(ClaimTypes.NameIdentifier)!);await Reload();}catch{Notice("Access-control data could not be loaded.",true);}finally{loading=false;}}
+ private async Task Reload(){roles=await Service.GetRolesAsync();users=await UserService.GetUsersAsync();branches=await BranchService.GetAllAsync();adminRoleId=roles.FirstOrDefault(x=>x.Code=="ADMIN")?.Id??Guid.Empty;}
+ private void ShowRoles()=>tab="roles";private void ShowAssignments()=>tab="assignments";private void NewRole(){roleForm=new(){ScopeType="branch"};editingSystem=false;formError=null;showRole=true;}private void EditRole(RoleItem x){roleForm=new(){Id=x.Id,Code=x.Code,Name=x.Name,Description=x.Description,ScopeType=x.ScopeType};editingSystem=x.IsSystem;formError=null;showRole=true;}private void CloseRole(){if(!saving)showRole=false;}
+ private async Task SaveRole(){saving=true;formError=null;try{await Service.SaveRoleAsync(roleForm,actor);await Reload();showRole=false;Notice("Role saved successfully.");}catch(PostgresException e)when(e.SqlState==PostgresErrorCodes.UniqueViolation){formError="This role code already exists.";}catch{formError="Role could not be saved.";}finally{saving=false;}}
+ private async Task UserChanged(ChangeEventArgs e){formError=null;if(!Guid.TryParse(e.Value?.ToString(),out var id)){assignment=new();return;}assignment=await Service.GetAssignmentAsync(id);}
+ private void SetRole(Guid id,ChangeEventArgs e){if(e.Value is true)assignment.RoleIds.Add(id);else assignment.RoleIds.Remove(id);}private void SetBranch(Guid id,ChangeEventArgs e){if(e.Value is true)assignment.BranchIds.Add(id);else{assignment.BranchIds.Remove(id);if(assignment.DefaultBranchId==id)assignment.DefaultBranchId=null;}}private void DefaultChanged(ChangeEventArgs e)=>assignment.DefaultBranchId=Guid.TryParse(e.Value?.ToString(),out var id)?id:null;
+ private async Task SaveAssignment(){saving=true;formError=null;try{await Service.SaveAssignmentAsync(assignment,actor,adminRoleId);await Reload();Notice("User roles and branch access saved.");}catch(Exception e){formError=e is InvalidOperationException?e.Message:"User access could not be saved.";}finally{saving=false;}}
+ private void Notice(string x,bool error=false){message=x;isError=error;}
+}
