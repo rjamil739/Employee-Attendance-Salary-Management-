@@ -1,0 +1,25 @@
+@using Employee_Attendance_Salary_Management.Models
+@using Employee_Attendance_Salary_Management.Services
+@inject CompanyProfileService CompanyService
+
+<aside class="emp-sidebar">
+    <a class="emp-brand" href="@(IsAdmin?"/dashboard/admin":"/dashboard/hr")">
+        @if(company?.LogoDataUrl is not null){<img src="@company.LogoDataUrl" alt="Company logo"/>}else{<span>HR</span>}
+        <div><strong>@(company?.CompanyName??"HR Portal")</strong><small>People operations</small></div>
+    </a>
+    <nav>
+        <a href="@(IsAdmin?"/dashboard/admin":"/dashboard/hr")">⌂ <span>Overview</span></a>
+        <b>Workforce</b>
+        <a class="@(Active=="employees"?"active":null)" href="/employees">♙ <span>Employees</span></a>
+        <a href="#" class="disabled">▣ <span>Attendance</span><i>Next</i></a>
+        <a href="#" class="disabled">◫ <span>Leave</span><i>Next</i></a>
+        <a href="#" class="disabled">▤ <span>Payroll</span><i>Next</i></a>
+        @if(IsAdmin){<b>Administration</b><a href="/dashboard/admin/settings/users">⚙ <span>Settings</span></a>}
+    </nav>
+    <form method="post" action="/auth/logout"><AntiforgeryToken/><button type="submit">↪ <span>Sign out</span></button></form>
+</aside>
+
+@code{
+ [Parameter]public bool IsAdmin{get;set;}[Parameter]public string Active{get;set;}=string.Empty;private CompanyProfile? company;
+ protected override async Task OnInitializedAsync()=>company=await CompanyService.GetAsync();
+}

@@ -2,6 +2,8 @@
 @using Employee_Attendance_Salary_Management.Services
 @inject CompanyProfileService CompanyService
 
+<style>.sm-sidebar nav a{font-weight:750}</style>
+
 <aside class="sm-sidebar">
     <a class="sm-brand" href="/dashboard/admin">
         @if (company?.LogoDataUrl is not null) { <img src="@company.LogoDataUrl" alt="Company logo" /> }
@@ -10,6 +12,7 @@
     </a>
     <nav>
         <a href="/dashboard/admin">⌂ <span>Overview</span></a>
+        <a href="/employees">♙ <span>Employees</span></a>
         <b>Settings</b>
         <a class="@(Active=="users"?"active":null)" href="/dashboard/admin/settings/users">♙ <span>Users</span></a>
         <a class="@(Active=="branches"?"active":null)" href="/dashboard/admin/settings/branches">▦ <span>Branches</span></a>

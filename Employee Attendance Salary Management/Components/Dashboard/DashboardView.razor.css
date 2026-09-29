@@ -112,3 +112,18 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round
     .user-badge div { display: none; }
     .summary-grid, .module-grid { grid-template-columns: 1fr; }
 }
+
+/* Richer cards, subtle movement and stronger sidebar labels */
+.dashboard-nav a { font-weight: 800; }
+.summary-card, .module-card { position: relative; overflow: hidden; transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
+.summary-card::after, .module-card::after { content: ""; position: absolute; right: -28px; bottom: -34px; width: 105px; height: 105px; border-radius: 50%; background: currentColor; opacity: .045; pointer-events: none; transition: transform .22s ease; }
+.summary-card.blue { color: #2f6ed4; background: linear-gradient(145deg, #fff, #edf4ff); }
+.summary-card.violet { color: #8753b8; background: linear-gradient(145deg, #fff, #f5edff); }
+.summary-card.green { color: #1c8a68; background: linear-gradient(145deg, #fff, #eaf9f3); }
+.summary-card.orange { color: #bd7420; background: linear-gradient(145deg, #fff, #fff3e1); }
+.summary-card:hover, .module-card:hover { transform: translateY(-5px) rotate(.3deg); box-shadow: 0 17px 34px rgba(24,49,84,.15); }
+.summary-card:hover::after, .module-card:hover::after { transform: scale(1.14); }
+.module-card:nth-child(3n+1) { background: linear-gradient(145deg, #fff, #edf5ff); }
+.module-card:nth-child(3n+2) { background: linear-gradient(145deg, #fff, #ecfaf5); }
+.module-card:nth-child(3n) { background: linear-gradient(145deg, #fff, #f7efff); }
+@media (prefers-reduced-motion: reduce) { .summary-card, .module-card { transition: none; } .summary-card:hover, .module-card:hover { transform: none; } }

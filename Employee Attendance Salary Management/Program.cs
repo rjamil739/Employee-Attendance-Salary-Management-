@@ -34,6 +34,7 @@ builder.Services.AddScoped<BranchService>();
 builder.Services.AddScoped<OrganizationService>();
 builder.Services.AddScoped<ContractorService>();
 builder.Services.AddScoped<AccessControlService>();
+builder.Services.AddScoped<EmployeeService>();
 
 var app = builder.Build();
 
