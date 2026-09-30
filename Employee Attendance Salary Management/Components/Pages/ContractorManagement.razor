@@ -1,5 +1,5 @@
 @page "/dashboard/admin/settings/contractors"
-@rendermode InteractiveServer
+@attribute [StreamRendering]
 @attribute [Authorize(Roles="ADMIN")]
 @using System.Security.Claims
 @using Employee_Attendance_Salary_Management.Models
@@ -10,7 +10,7 @@
 @inject BranchService BranchService
 
 <PageTitle>Contractor Management</PageTitle>
-<div class="sm-shell"><SettingsSidebar Active="contractors"/><main class="sm-main">
+<div class="sm-shell"><EmployeeSidebar Active="contractors" IsAdmin="true"/><main class="sm-main">
 <header class="sm-header"><div><a href="/dashboard/admin">← Back to dashboard</a><span class="sm-kicker">Company settings</span><h1>Contractors</h1><p>Manage contractor profiles and branch assignments from one page.</p></div><button class="sm-primary" @onclick="OpenNew">+ Add contractor</button></header>
 @if(message is not null){<div class="sm-notice @(isError?"error":null)">@message</div>}
 <section class="sm-panel"><div class="sm-panel-head"><div><h2>All contractors</h2><p>@contractors.Count records · core.contractor and core.contractor_branch</p></div><input class="sm-search" value="@search" @oninput="e=>search=e.Value?.ToString()??string.Empty" placeholder="Search contractor, contact or city"/></div>
@@ -29,7 +29,7 @@
 @code{
  private IReadOnlyList<ContractorItem> contractors=[];private IReadOnlyList<BranchListItem> branches=[];private ContractorFormModel form=new();private ContractorItem? selected;private Guid actor;private string search="";private string? message,formError;private bool isError,loading=true,saving,showForm;
  private IEnumerable<ContractorItem> Filtered=>contractors.Where(x=>string.IsNullOrWhiteSpace(search)||new[]{x.Name,x.Code,x.ContactPerson??"",x.City??""}.Any(v=>v.Contains(search,StringComparison.OrdinalIgnoreCase)));
- protected override async Task OnInitializedAsync(){try{var u=(await AuthState.GetAuthenticationStateAsync()).User;actor=Guid.Parse(u.FindFirstValue(ClaimTypes.NameIdentifier)!);await Reload();branches=await BranchService.GetAllAsync();}catch{Notice("Contractor data could not be loaded.",true);}finally{loading=false;}}
+ protected override async Task OnInitializedAsync(){try{var u=(await AuthState.GetAuthenticationStateAsync()).User;actor=Guid.Parse(u.FindFirstValue(ClaimTypes.NameIdentifier)!);var contractorTask=Service.GetAllAsync();var branchTask=BranchService.GetAllAsync();await Task.WhenAll(contractorTask,branchTask);contractors=await contractorTask;branches=await branchTask;}catch{Notice("Contractor data could not be loaded.",true);}finally{loading=false;}}
  private async Task Reload()=>contractors=await Service.GetAllAsync();private void OpenNew(){form=new(){IsActive=true};formError=null;showForm=true;}private void Edit(ContractorItem x){form=new(){Id=x.Id,Code=x.Code,Name=x.Name,ContactPerson=x.ContactPerson,PhoneNumber=x.PhoneNumber,Email=x.Email,Address=x.Address,City=x.City,IsActive=x.IsActive,BranchIds=x.ActiveBranchIds.ToHashSet()};formError=null;showForm=true;}private void SetBranch(Guid id,ChangeEventArgs e){if(e.Value is true)form.BranchIds.Add(id);else form.BranchIds.Remove(id);}private void Close(){if(!saving)showForm=false;}private void View(ContractorItem x)=>selected=x;private void CloseView()=>selected=null;private void EditFromView(ContractorItem x){selected=null;Edit(x);}
  private async Task Save(){saving=true;formError=null;try{await Service.SaveAsync(form,actor);await Reload();showForm=false;Notice("Contractor and branch assignments saved.");}catch(PostgresException e)when(e.SqlState==PostgresErrorCodes.UniqueViolation){formError="This contractor code already exists.";}catch{formError="Contractor could not be saved.";}finally{saving=false;}}
  private async Task Toggle(ContractorItem x){await Service.SetActiveAsync(x.Id,!x.IsActive,actor);await Reload();Notice("Contractor status updated.");}private void Notice(string x,bool error=false){message=x;isError=error;}

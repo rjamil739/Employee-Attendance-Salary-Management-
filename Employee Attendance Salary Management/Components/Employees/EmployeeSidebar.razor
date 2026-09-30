@@ -1,6 +1,7 @@
 @using Employee_Attendance_Salary_Management.Models
 @using Employee_Attendance_Salary_Management.Services
 @inject CompanyProfileService CompanyService
+@inject NavigationManager Navigation
 
 <aside class="emp-sidebar">
     <a class="emp-brand" href="@(IsAdmin?"/dashboard/admin":"/dashboard/hr")">
@@ -8,18 +9,22 @@
         <div><strong>@(company?.CompanyName??"HR Portal")</strong><small>People operations</small></div>
     </a>
     <nav>
-        <a href="@(IsAdmin?"/dashboard/admin":"/dashboard/hr")">⌂ <span>Overview</span></a>
+        <a class="@(Active=="overview"?"active":null)" href="@(IsAdmin?"/dashboard/admin":"/dashboard/hr")">⌂ <span>Overview</span></a>
         <b>Workforce</b>
         <a class="@(Active=="employees"?"active":null)" href="/employees">♙ <span>Employees</span></a>
-        <a href="#" class="disabled">▣ <span>Attendance</span><i>Next</i></a>
-        <a href="#" class="disabled">◫ <span>Leave</span><i>Next</i></a>
-        <a href="#" class="disabled">▤ <span>Payroll</span><i>Next</i></a>
-        @if(IsAdmin){<b>Administration</b><a href="/dashboard/admin/settings/users">⚙ <span>Settings</span></a>}
+        <button type="button" class="emp-nav-button @(Active=="attendance"?"active":null)" @onclick="OpenAttendance">▣ <span>Attendance</span></button>
+        <button type="button" class="emp-nav-button disabled" disabled aria-disabled="true">◫ <span>Leave</span><i>Next</i></button>
+        <button type="button" class="emp-nav-button disabled" disabled aria-disabled="true">▤ <span>Payroll</span><i>Next</i></button>
+        @if(IsAdmin){<b>Administration</b><button type="button" class="emp-nav-button emp-setup-toggle @(IsSetupActive?"active":null)" @onclick="ToggleSetup">⚙ <span>Company Setup</span><i>@(setupOpen?"−":"+")</i></button>@if(setupOpen){<button type="button" class="emp-setup-backdrop" aria-label="Close company setup" @onclick="CloseSetup"></button><div class="emp-subnav"><header><strong>Company Setup</strong><button type="button" aria-label="Close" @onclick="CloseSetup">×</button></header><a class="@(Active=="users"?"active":null)" href="/dashboard/admin/settings/users">♙ <span>Users</span></a><a class="@(Active=="branches"?"active":null)" href="/dashboard/admin/settings/branches">▦ <span>Branches</span></a><a class="@(Active=="organization"?"active":null)" href="/dashboard/admin/settings/organization">⌘ <span>Organization</span></a><a class="@(Active=="contractors"?"active":null)" href="/dashboard/admin/settings/contractors">◇ <span>Contractors</span></a></div>}}
     </nav>
     <form method="post" action="/auth/logout"><AntiforgeryToken/><button type="submit">↪ <span>Sign out</span></button></form>
 </aside>
 
 @code{
- [Parameter]public bool IsAdmin{get;set;}[Parameter]public string Active{get;set;}=string.Empty;private CompanyProfile? company;
- protected override async Task OnInitializedAsync()=>company=await CompanyService.GetAsync();
+ [Parameter]public bool IsAdmin{get;set;}[Parameter]public string Active{get;set;}=string.Empty;private CompanyProfile? company;private bool setupOpen;
+ private bool IsSetupActive=>Active is "users" or "branches" or "organization" or "contractors";
+ protected override async Task OnInitializedAsync(){company=await CompanyService.GetAsync();setupOpen=IsSetupActive;}
+ private void OpenAttendance()=>Navigation.NavigateTo("/attendance");
+ private void ToggleSetup()=>setupOpen=!setupOpen;
+ private void CloseSetup()=>setupOpen=false;
 }

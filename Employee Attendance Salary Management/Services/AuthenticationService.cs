@@ -116,6 +116,16 @@ public sealed class AuthenticationService
             ClaimTypes.Role));
     }
 
+    public async Task<bool> IsActiveAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        await using var connection = new NpgsqlConnection(StaticConnection.conn);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new NpgsqlCommand(
+            "SELECT is_active FROM auth.user_account WHERE id = @id", connection);
+        command.Parameters.AddWithValue("id", userId);
+        return await command.ExecuteScalarAsync(cancellationToken) is true;
+    }
+
     public static string HashPassword(Guid userId, string userName, string password)
     {
         var identity = new PasswordIdentity(userId, userName);

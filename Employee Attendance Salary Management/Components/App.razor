@@ -12,13 +12,19 @@
     <link rel="stylesheet" href="@Assets["Employee_Attendance_Salary_Management.styles.css"]" />
     <link rel="stylesheet" href="@Assets["user-dialogs.css"]" />
     <link rel="stylesheet" href="@Assets["employees.css"]" />
+    <link rel="stylesheet" href="@Assets["attendance.css"]" />
+    <link rel="stylesheet" href="@Assets["branch-dialogs.css"]" />
     <ImportMap />
-    <HeadOutlet />
+    <HeadOutlet @rendermode="new InteractiveServerRenderMode(prerender: false)" />
 </head>
 
 <body>
-    <Routes />
+    <div class="route-progress" aria-hidden="true"><i></i></div>
+    <div id="app-boot" class="app-boot" aria-live="polite"><i></i><span>Loading workspace…</span></div>
+    <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
     <ReconnectModal />
+    <script src="@Assets["print.js"]"></script>
+    <script src="@Assets["navigation.js"]"></script>
     <script src="@Assets["_framework/blazor.web.js"]"></script>
 </body>
 

@@ -1,4 +1,5 @@
 @page "/dashboard/admin"
+@attribute [StreamRendering]
 @attribute [Authorize(Roles = "ADMIN")]
 @using System.Security.Claims
 @using Employee_Attendance_Salary_Management.Components.Dashboard
@@ -29,7 +30,10 @@ else
         var principal = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
         var userId = Guid.Parse(principal.FindFirstValue(ClaimTypes.NameIdentifier)!);
         displayName = principal.FindFirstValue("display_name") ?? principal.Identity?.Name ?? "Administrator";
-        company = await CompanyService.GetAsync();
-        summary = await DashboardService.GetAsync(userId, true);
+        var companyTask = CompanyService.GetAsync();
+        var summaryTask = DashboardService.GetAsync(userId, true);
+        await Task.WhenAll(companyTask, summaryTask);
+        company = await companyTask;
+        summary = await summaryTask;
     }
 }

@@ -13,14 +13,15 @@ public sealed class UserAccountListItem
     public bool IsActive { get; init; }
     public DateTimeOffset? LastLoginAt { get; init; }
     public IReadOnlyList<string> Roles { get; init; } = [];
+    public IReadOnlyList<Guid> BranchIds { get; init; } = [];
+    public Guid? DefaultBranchId { get; init; }
 }
 
 public sealed class UserAccountFormModel
 {
     public Guid? Id { get; set; }
 
-    [Required(ErrorMessage = "Username is required.")]
-    [StringLength(100, MinimumLength = 3, ErrorMessage = "Username must be between 3 and 100 characters.")]
+    [StringLength(100)]
     public string UserName { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Display name is required.")]
@@ -39,6 +40,10 @@ public sealed class UserAccountFormModel
     public string RoleCode { get; set; } = "HR_MANAGER";
 
     public bool HasAllBranchAccess { get; set; }
+    [Required(ErrorMessage = "Select an access scope.")]
+    public string AccessScope { get; set; } = "branch";
+    public HashSet<Guid> BranchIds { get; set; } = [];
+    public Guid? DefaultBranchId { get; set; }
     public bool IsActive { get; set; } = true;
 
     [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must contain at least 8 characters.")]

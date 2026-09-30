@@ -1,5 +1,5 @@
 @page "/dashboard/admin/settings/organization"
-@rendermode InteractiveServer
+@attribute [StreamRendering]
 @attribute [Authorize(Roles="ADMIN")]
 @using System.Security.Claims
 @using Employee_Attendance_Salary_Management.Models
@@ -10,7 +10,7 @@
 @inject BranchService BranchService
 
 <PageTitle>Organization Settings</PageTitle>
-<div class="sm-shell"><SettingsSidebar Active="organization" /><main class="sm-main">
+<div class="sm-shell"><EmployeeSidebar Active="organization" IsAdmin="true"/><main class="sm-main">
     <header class="sm-header"><div><a href="/dashboard/admin">← Back to dashboard</a><span class="sm-kicker">Organization settings</span><h1>Departments & designations</h1><p>Manage the company structure separately for every branch.</p></div><button class="sm-primary" @onclick="OpenNew">+ Add @(tab=="departments"?"department":"designation")</button></header>
     @if(message is not null){<div class="sm-notice @(isError?"error":null)">@message</div>}
     <div class="sm-tabs"><button class="@(tab=="departments"?"active":null)" @onclick="ShowDepartments">Departments (@departments.Count)</button><button class="@(tab=="designations"?"active":null)" @onclick="ShowDesignations">Designations (@designations.Count)</button></div>
@@ -40,8 +40,8 @@
 @code{
  private IReadOnlyList<DepartmentItem> departments=[];private IReadOnlyList<DesignationItem> designations=[];private IReadOnlyList<BranchListItem> branches=[];private DepartmentFormModel departmentForm=new();private DesignationFormModel designationForm=new();private Guid actor;private string tab="departments",search="";private string? message,formError;private bool isError,loading=true,saving,showDepartment,showDesignation;
  private IEnumerable<DepartmentItem> FilteredDepartments=>departments.Where(x=>Match(x.Name,x.Code,x.BranchName));private IEnumerable<DesignationItem> FilteredDesignations=>designations.Where(x=>Match(x.Name,x.Code,x.BranchName,x.DepartmentName));private bool Match(params string[] values)=>string.IsNullOrWhiteSpace(search)||values.Any(x=>x.Contains(search,StringComparison.OrdinalIgnoreCase));private RenderFragment FormError=>b=>{if(formError is not null){b.OpenElement(0,"div");b.AddAttribute(1,"class","sm-form-error");b.AddContent(2,formError);b.CloseElement();}};
- protected override async Task OnInitializedAsync(){try{var u=(await AuthState.GetAuthenticationStateAsync()).User;actor=Guid.Parse(u.FindFirstValue(ClaimTypes.NameIdentifier)!);await Reload();branches=await BranchService.GetAllAsync();}catch{Notice("Organization data could not be loaded.",true);}finally{loading=false;}}
- private async Task Reload(){departments=await Service.GetDepartmentsAsync();designations=await Service.GetDesignationsAsync();}
+ protected override async Task OnInitializedAsync(){try{var u=(await AuthState.GetAuthenticationStateAsync()).User;actor=Guid.Parse(u.FindFirstValue(ClaimTypes.NameIdentifier)!);var branchTask=BranchService.GetAllAsync();await Task.WhenAll(Reload(),branchTask);branches=await branchTask;}catch{Notice("Organization data could not be loaded.",true);}finally{loading=false;}}
+ private async Task Reload(){var departmentTask=Service.GetDepartmentsAsync();var designationTask=Service.GetDesignationsAsync();await Task.WhenAll(departmentTask,designationTask);departments=await departmentTask;designations=await designationTask;}
  private void ShowDepartments()=>tab="departments";private void ShowDesignations()=>tab="designations";
  private void OpenNew(){formError=null;if(tab=="departments"){departmentForm=new(){IsActive=true};showDepartment=true;}else{designationForm=new(){IsActive=true};showDesignation=true;}}
  private void EditDepartment(DepartmentItem x){departmentForm=new(){Id=x.Id,BranchId=x.BranchId,ParentDepartmentId=x.ParentDepartmentId,Code=x.Code,Name=x.Name,IsActive=x.IsActive};formError=null;showDepartment=true;}

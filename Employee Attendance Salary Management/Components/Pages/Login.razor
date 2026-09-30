@@ -1,4 +1,5 @@
 @page "/login/{Role}"
+@attribute [StreamRendering]
 @attribute [AllowAnonymous]
 @using Employee_Attendance_Salary_Management.Models
 @using Employee_Attendance_Salary_Management.Services
@@ -60,6 +61,10 @@
                 @if (Error == "invalid")
                 {
                     <div class="login-message error">Username, password or selected portal is incorrect.</div>
+                }
+                else if (Error == "session")
+                {
+                    <div class="login-message error">The secure form expired. Please sign in again.</div>
                 }
 
                 <button class="login-submit" type="submit">Sign in <span>→</span></button>

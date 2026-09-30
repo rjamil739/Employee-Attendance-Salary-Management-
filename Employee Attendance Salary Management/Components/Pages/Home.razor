@@ -1,10 +1,11 @@
 @page "/"
-@rendermode InteractiveServer
+@attribute [StreamRendering]
 @using System.ComponentModel.DataAnnotations
 @using Employee_Attendance_Salary_Management.Models
 @using Employee_Attendance_Salary_Management.Services
 @using Npgsql
 @inject CompanyProfileService CompanyService
+@inject ILogger<Home> Logger
 
 <PageTitle>@(company?.CompanyName ?? "Company setup")</PageTitle>
 
@@ -42,6 +43,15 @@
         <section class="loading-state">
             <span class="loader"></span>
             <p>Loading your workspace…</p>
+        </section>
+    }
+    else if (loadFailed)
+    {
+        <section class="loading-state database-error-state">
+            <span class="error-icon">!</span>
+            <h1>Company profile could not be loaded</h1>
+            <p>@formError</p>
+            <a href="/">Try again</a>
         </section>
     }
     else if (company is null)
@@ -145,6 +155,7 @@
     private string? formError;
     private bool isLoading = true;
     private bool isSaving;
+    private bool loadFailed;
 
     protected override async Task OnInitializedAsync()
     {
@@ -152,8 +163,10 @@
         {
             company = await CompanyService.GetAsync();
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            Logger.LogError(exception, "Company profile could not be loaded.");
+            loadFailed = true;
             formError = "Company profile could not be loaded. Please check the database connection.";
         }
         finally
