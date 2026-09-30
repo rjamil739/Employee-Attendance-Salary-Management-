@@ -1,0 +1,87 @@
+http://localhost:5197
+
+delete and clear database
+DO $$
+DECLARE
+    table_list text;
+BEGIN
+    SELECT string_agg(
+        format('%I.%I', schemaname, tablename),
+        ', '
+    )
+    INTO table_list
+    FROM pg_tables
+    WHERE schemaname IN (
+        'auth',
+        'core',
+        'hr',
+        'attendance',
+        'leave_mgmt',
+        'payroll',
+        'loans',
+        'finance',
+        'workflow',
+        'audit'
+    );
+
+    IF table_list IS NOT NULL THEN
+        EXECUTE 'TRUNCATE TABLE '
+            || table_list
+            || ' RESTART IDENTITY CASCADE';
+    END IF;
+END $$;
+
+
+
+
+
+Username: admin1234
+Password: Admin@123
+Portal: Administrator
+
+D:\Production\nadeem\attendanceSalarymanagement
+
+
+scp -r "D:\Production\nadeem\attendanceSalarymanagement" root@213.199.35.5:/var/www/
+
+for user add
+
+DO $$
+DECLARE
+    new_user_id uuid := gen_random_uuid();
+    admin_role_id uuid;
+BEGIN
+    INSERT INTO auth.role
+        (code, name, description, scope_type, is_system)
+    VALUES
+        ('ADMIN', 'Admin', 'System administrator', 'company', true)
+    ON CONFLICT (code) DO UPDATE
+        SET name = EXCLUDED.name
+    RETURNING id INTO admin_role_id;
+
+    INSERT INTO auth.user_account
+    (
+        id,
+        user_name,
+        email,
+        password_hash,
+        phone_number,
+        display_name,
+        has_all_branch_access,
+        is_active
+    )
+    VALUES
+    (
+        new_user_id,
+        'admin1234',
+        'admin@example.com',
+        'AQAAAAIAAYagAAAAEA51/sP+j07H7Pu0l8koGnULBQqey66w9TALNDWNvSd5Ix0MxiP7YuC9Jg9/FWRM/w==',
+        '03001234567',
+        'System Administrator',
+        true,
+        true
+    );
+
+    INSERT INTO auth.user_role (user_id, role_id)
+    VALUES (new_user_id, admin_role_id);
+END $$;
