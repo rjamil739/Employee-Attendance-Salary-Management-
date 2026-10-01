@@ -94,6 +94,8 @@ builder.Services.AddScoped<OrganizationService>();
 builder.Services.AddScoped<ContractorService>();
 builder.Services.AddScoped<EmployeeService>();
 builder.Services.AddScoped<AttendanceService>();
+builder.Services.AddScoped<LeaveService>();
+builder.Services.AddScoped<PayrollService>();
 
 var app = builder.Build();
 

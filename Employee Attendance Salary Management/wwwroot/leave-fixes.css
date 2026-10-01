@@ -1,0 +1,26 @@
+.leave-cancel {
+    min-height: 34px;
+    padding: 0 13px;
+    border: 0;
+    border-radius: 8px;
+    color: #fff;
+    background: #e43b4f;
+    box-shadow: 0 5px 12px rgba(228, 59, 79, .18);
+    font-size: 10px;
+    font-weight: 850;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform .18s ease, background .18s ease;
+}
+
+.leave-cancel:hover {
+    background: #c92e42;
+    transform: translateY(-1px);
+}
+
+.leave-cancel:active { transform: translateY(0); }
+.leave-attachment { width: max-content; color: #2857b8; font-size: 10px; font-weight: 800; }
+
+@media (max-width: 650px) {
+    .leave-cancel { width: 100%; min-height: 38px; }
+}
